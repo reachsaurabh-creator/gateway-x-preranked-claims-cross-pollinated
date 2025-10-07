@@ -2,7 +2,7 @@
 
 import asyncio
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Tuple
 from abc import ABC, abstractmethod
 
 from .config import Config
@@ -132,6 +132,29 @@ Question: {query}"""
             return claims[:num_claims] if claims else [response]
         else:
             return [response]
+    
+    async def generate_response_with_claims_extraction(self, query: str) -> Tuple[str, List[Dict]]:
+        """Generate response and extract structured claims."""
+        prompt = f"""You are participating in a multi-AI consensus process. Your task is to:
+
+1. Provide a comprehensive response to the question
+2. Extract and rank the key claims/arguments from your response
+
+QUESTION: {query}
+
+Please provide:
+1. A detailed, well-reasoned response (2-4 paragraphs)
+2. A ranked list of 3-7 key claims extracted from your response
+
+Your response should be factual, comprehensive, and demonstrate deep understanding of the topic.
+
+RESPONSE:"""
+        
+        response = await self.generate_response(prompt)
+        
+        # For now, return the response and empty claims list
+        # The claims extraction will be handled by ClaimsExtractor
+        return response, []
 
 
 class OpenAIEngine(AIEngine):

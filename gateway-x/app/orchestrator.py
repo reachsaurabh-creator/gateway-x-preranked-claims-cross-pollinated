@@ -1,4 +1,4 @@
-"""Main orchestrator for consensus rounds and timeline management."""
+"""Main orchestrator for preranked claims cross-pollination consensus."""
 
 import asyncio
 import hashlib
@@ -12,16 +12,19 @@ from .btl_ranker import BTLRanker
 from .playbook_selector import PlaybookSelector
 from .monitors import StopConditionEvaluator
 from .ledger import LEDGER
+from .cross_pollination import CrossPollinationEngine, CrossPollinationResult
+from .ai_engines import MultiEngineClient
 
 
 class Orchestrator:
     """
-    Runs consensus rounds until governance thresholds are met.
+    Runs preranked claims cross-pollination consensus until governance thresholds are met.
     
     For each round:
-      1) Select informative pairs; run parallel duels.
-      2) Update BTL; compute convergence score (truth score).
-      3) Build a "truth response" (summary) + record top claims.
+      1) Generate responses with extracted claims from all engines
+      2) Cross-pollinate claims between engines for improved responses
+      3) Update BTL scores based on extracted claims
+      4) Compute convergence score based on claims similarity and BTL scores
     
     Stores a per-run timeline for /timeline and /timeline/report.
     """
@@ -32,121 +35,95 @@ class Orchestrator:
         self.btl = BTLRanker(config)
         self.selector = PlaybookSelector(config)
         self.stopper = StopConditionEvaluator(config)
+        self.cross_pollination = CrossPollinationEngine(config)
+        self.multi_engine_client = MultiEngineClient(config)
         self.runs: Dict[str, List[TimelineItem]] = {}  # run_id -> timeline
-        self.current_engines: List[str] = [
-            "engine.alpha", "engine.beta", "engine.gamma", "engine.delta"
-        ]
 
     async def run(self, query: str, budget: int, confidence_threshold: float) -> Dict[str, Any]:
-        """Run the complete consensus process."""
+        """Run the complete preranked claims cross-pollination consensus process."""
         run_id = hashlib.sha256(f"{time.time()}|{query}".encode()).hexdigest()[:12]
         timeline: List[TimelineItem] = []
         self.runs[run_id] = timeline
 
-        # Create fresh BTL ranker for this query
+        # Create fresh components for this query
         btl = BTLRanker(self.config)
         selector = PlaybookSelector(self.config)
         stopper = StopConditionEvaluator(self.config)
+        
+        # Reset cross-pollination state
+        self.cross_pollination.reset()
 
-        # Round 0: initial claims
-        claims = await self.scheduler.initial_round(
-            run_id, query, engines=self.current_engines, num_claims=5
+        # Round 1: Initial responses with claims extraction
+        LEDGER.log("cross_pollination_start", {
+            "run_id": run_id,
+            "query": query,
+            "budget": budget,
+            "confidence_threshold": confidence_threshold,
+            "engines": list(self.multi_engine_client.engines.keys())
+        })
+        
+        initial_results = await self.cross_pollination.run_initial_round(
+            query, self.multi_engine_client.engines
         )
-        claims = self._filter_invalid_claims(claims)
-        btl.add_claims(claims)
-
+        
+        # Extract all initial claims and add to BTL
+        initial_claims = []
+        for result in initial_results:
+            initial_claims.extend([claim.text for claim in result.extracted_claims])
+        
+        if initial_claims:
+            btl.add_claims(initial_claims)
+        
         total_duels = 0
-        prev_conf = 0.0
         stop_reason = "budget_exhausted"
 
-        # Main consensus loop
-        convergence_preserved = False
-        for round_idx in range(1, budget + 1):
-            # ITERATIVE REFINEMENT: Generate new claims based on previous round
-            # BUT ONLY if we haven't reached good convergence yet
-            current_confidence = btl.get_confidence_proxy()
-            
-            if round_idx > 1 and round_idx <= 4 and not convergence_preserved:
-                # Get ALL claims from previous round for comprehensive analysis
-                prev_all_claims = sorted(
-                    btl.snapshot_state().items(), 
-                    key=lambda kv: kv[1], 
-                    reverse=True
-                )  # ALL claims for comprehensive context
-                
-                # Generate refined claims using ALL previous round context
-                refined_claims = await self.scheduler.generate_refined_claims(
-                    run_id, query, prev_all_claims, round_idx
-                )
-                
-                # Filter and replace original claims with refined ones
-                refined_claims = self._filter_invalid_claims(refined_claims)
-                if refined_claims:
-                    # REPLACE original claims with refined ones for critical feedback loop
-                    # Remove original claims from BTL and clean up related data
-                    original_claims = list(btl.theta.keys())
-                    for claim in original_claims:
-                        if claim in btl.theta:
-                            del btl.theta[claim]
-                    
-                    # Clean up wins dictionary to remove stale references
-                    btl.wins = {k: v for k, v in btl.wins.items() 
-                               if k[0] not in original_claims and k[1] not in original_claims}
-                    
-                    # Add refined claims to BTL (they'll start with neutral scores)
-                    btl.add_claims(refined_claims)
-                    
-                    # Replace the claims list with refined ones
-                    claims = refined_claims
-                    
-                    LEDGER.log("refined_claims_replacement", {
-                        "run_id": run_id, 
-                        "round": round_idx,
-                        "original_claims": len(original_claims),
-                        "refined_claims": len(refined_claims),
-                        "confidence": current_confidence,
-                        "action": "replaced_original_with_refined"
-                    })
-            elif current_confidence >= 0.8 and not convergence_preserved:
-                # Only stop adding new claims at very high confidence
-                convergence_preserved = True
-                LEDGER.log("convergence_preserved", {
-                    "run_id": run_id,
-                    "round": round_idx,
-                    "confidence": current_confidence,
-                    "reason": "Stopped adding new claims to preserve convergence"
-                })
-
-            # Select playbook and informative pairs from current claims
-            playbook = selector.choose_playbook(
-                btl.snapshot_state(), round_idx, budget
+        # Main cross-pollination consensus loop
+        for round_idx in range(2, budget + 1):
+            # Run cross-pollination round
+            cross_pollination_results = await self.cross_pollination.run_cross_pollination_round(
+                query, self.multi_engine_client.engines, round_idx
             )
-            pairs = btl.select_k_informative_pairs(claims, k=self.config.DUELS_PER_ROUND)
+            
+            # Extract new claims and update BTL
+            new_claims = []
+            for result in cross_pollination_results:
+                new_claims.extend([claim.text for claim in result.extracted_claims])
+            
+            if new_claims:
+                btl.add_claims(new_claims)
 
-            # Run duels in parallel
-            tasks = [
-                self.scheduler.schedule_duel(run_id, query, a, b, playbook) 
-                for a, b in pairs
-            ]
-            results = []
-            if tasks:
-                results = await asyncio.gather(*tasks)
+            # Run duels on current claims pool for BTL updates
+            all_claims = list(btl.theta.keys())
+            if len(all_claims) >= 2:
+                playbook = selector.choose_playbook(
+                    btl.snapshot_state(), round_idx, budget
+                )
+                pairs = btl.select_k_informative_pairs(all_claims, k=self.config.DUELS_PER_ROUND)
 
-            # Update BTL scores
-            for duel in results:
-                btl.update(duel)
-            total_duels += len(results)
+                # Run duels in parallel
+                tasks = [
+                    self.scheduler.schedule_duel(run_id, query, a, b, playbook) 
+                    for a, b in pairs
+                ]
+                results = []
+                if tasks:
+                    results = await asyncio.gather(*tasks)
+
+                # Update BTL scores
+                for duel in results:
+                    btl.update(duel)
+                total_duels += len(results)
 
             # Compute confidence intervals if enough rounds elapsed
             if btl.rounds() >= self.config.CI_MIN_ROUNDS:
                 btl.compute_cis(self.config.CI_BOOTSTRAP_SAMPLES)
 
-            # Update UCB performance (reward = Δ confidence proxy)
-            cur_conf = btl.get_confidence_proxy()
-            selector.update_performance(playbook, max(0.0, cur_conf - prev_conf))
-            prev_conf = cur_conf
+            # Calculate hybrid confidence (BTL + claims convergence)
+            btl_confidence = btl.get_confidence_proxy()
+            claims_convergence = self.cross_pollination.calculate_claims_convergence()
+            hybrid_confidence = (btl_confidence + claims_convergence) / 2
 
-            # Assemble truth response (summary) for this round
+            # Assemble truth response for this round
             best = btl.best_claim()
             ranked = sorted(
                 btl.snapshot_state().items(), 
@@ -171,31 +148,51 @@ class Orchestrator:
             item = TimelineItem(
                 run_id=run_id,
                 round_index=round_idx,
-                convergence_score=cur_conf,
+                convergence_score=hybrid_confidence,
                 best_claim_cid=best,
                 best_claim_text=best,
                 summary=truth_summary,
                 top_claims=top,
             )
             timeline.append(item)
-            LEDGER.log("round_summary", item.model_dump())
+            LEDGER.log("cross_pollination_round_summary", {
+                "run_id": run_id,
+                "round": round_idx,
+                "btl_confidence": btl_confidence,
+                "claims_convergence": claims_convergence,
+                "hybrid_confidence": hybrid_confidence,
+                "total_claims": len(self.cross_pollination.get_all_claims()),
+                "new_claims": len(new_claims),
+                "duels": len(results) if 'results' in locals() else 0
+            })
 
-            # Check stop conditions
-            if stopper.should_stop(btl, confidence_threshold):
-                stop_reason = stopper.get_stop_reason()
+            # Check stop conditions using hybrid confidence
+            if hybrid_confidence >= confidence_threshold:
+                stop_reason = "confidence_threshold"
+                break
+                
+            if round_idx >= budget:
+                stop_reason = "budget_exhausted"
                 break
 
         # Final result
+        final_btl_confidence = btl.get_confidence_proxy()
+        final_claims_convergence = self.cross_pollination.calculate_claims_convergence()
+        final_hybrid_confidence = (final_btl_confidence + final_claims_convergence) / 2
+        
         result = {
             "run_id": run_id,
             "query": query,
             "best_claim": btl.best_claim(),
-            "confidence": btl.get_confidence_proxy(),
+            "confidence": final_hybrid_confidence,
+            "btl_confidence": final_btl_confidence,
+            "claims_convergence": final_claims_convergence,
             "rounds": len(timeline),
             "total_duels": total_duels,
+            "total_claims": len(self.cross_pollination.get_all_claims()),
             "stop_reason": stop_reason,
         }
-        LEDGER.log("final_result", result)
+        LEDGER.log("cross_pollination_final_result", result)
         return result
 
     def get_timeline(self, run_id: str) -> List[TimelineItem]:
