@@ -1,0 +1,1765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tseek - Truth Through Convergence</title>
+    <style>
+        :root {
+            --primary: #000000;
+            --secondary: #6b7280;
+            --success: #000000;
+            --warning: #f59e0b;
+            --error: #dc2626;
+            --bg: #ffffff;
+            --fg: #111827;
+            --muted: #9ca3af;
+            --border: #f3f4f6;
+            --input-bg: #ffffff;
+            --surface: #fafafa;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.5;
+            color: var(--fg);
+            background: var(--bg);
+            font-weight: 400;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 4rem;
+            padding: 3rem 0;
+            position: relative;
+        }
+
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+            z-index: 3; /* Header content (logo + Tseek) is above the line */
+        }
+
+        .logo {
+            width: 50px;
+            height: 50px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .logo::before {
+            content: '';
+            position: absolute;
+            width: 80%;
+            height: 80%;
+            border: 2px solid var(--bg);
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--bg) 0%, transparent 50%, var(--bg) 100%);
+            animation: converge 3s ease-in-out infinite;
+        }
+
+        @keyframes converge {
+            0%, 100% { transform: scale(0.8) rotate(0deg); opacity: 0.7; }
+            50% { transform: scale(1.1) rotate(180deg); opacity: 1; }
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 300;
+            color: var(--primary);
+            margin: 0;
+            letter-spacing: -0.02em;
+            flex-shrink: 0;
+        }
+
+        .header p {
+            font-size: 1rem;
+            color: var(--muted);
+            font-weight: 400;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            position: relative;
+            z-index: 1; /* Tagline is below the line */
+        }
+
+        .card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 0.75rem;
+            color: var(--fg);
+            font-size: 0.95rem;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 1rem;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-size: 1rem;
+            background: var(--input-bg);
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .slider {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--border);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+        }
+
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            border: none;
+        }
+
+        .confidence-display {
+            font-weight: 600;
+            color: var(--primary);
+            min-width: 80px;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: inherit;
+        }
+
+        .btn:hover {
+            background: #333333;
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            background: var(--muted);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results {
+            display: none;
+        }
+
+        .consensus-result {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .final-response-header {
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .final-response-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+
+        .meta-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+            background: var(--bg);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .meta-item:hover {
+            background: rgba(59, 130, 246, 0.05);
+            border-color: rgba(59, 130, 246, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        }
+
+        .meta-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+            color: var(--muted);
+            transition: color 0.2s;
+        }
+
+        .meta-item:hover .meta-label {
+            color: var(--primary);
+        }
+
+        .meta-value {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--fg);
+            transition: color 0.2s;
+        }
+
+        .meta-item:hover .meta-value {
+            color: var(--primary);
+        }
+
+        .explanation-tooltip {
+            position: absolute;
+            background: #1f2937;
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            max-width: 400px;
+            z-index: 1000;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            display: none;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            pointer-events: none;
+        }
+
+        .explanation-tooltip::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 8px solid #1f2937;
+        }
+
+        .tseek-score {
+            color: var(--primary);
+        }
+
+        .settings-item {
+            border: 1px solid var(--border);
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        }
+
+        .settings-item:hover {
+            background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+            border-color: var(--primary);
+        }
+
+        .settings-value {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--muted);
+            text-align: center;
+            line-height: 1.3;
+        }
+
+        .settings-item:hover .settings-value {
+            color: var(--primary);
+        }
+
+        .consensus-text {
+            font-size: 1.2rem;
+            line-height: 1.7;
+            margin-bottom: 1rem;
+            color: var(--fg);
+            max-height: none;
+            overflow: visible;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .consensus-meta {
+            font-size: 0.9rem;
+            color: var(--muted);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .chart-container {
+            margin: 2rem 0;
+            padding: 2rem;
+            background: var(--surface);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+        }
+
+        .chart-title {
+            font-weight: 500;
+            margin-bottom: 2rem;
+            text-align: center;
+            color: var(--fg);
+            font-size: 1.1rem;
+        }
+
+        .chart {
+            width: 100%;
+            height: 300px;
+            background: var(--bg);
+            border-radius: 12px;
+        }
+
+        .rounds-container {
+            margin-top: 2rem;
+        }
+
+        .round-toggle {
+            width: 100%;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            position: relative;
+        }
+
+        .round-toggle:hover {
+            background: #e2e8f0;
+        }
+
+        .round-toggle.active {
+            background: #f8fafc;
+            color: var(--fg);
+            border-color: #d1d5db;
+            border-width: 1px;
+        }
+
+        .round-toggle::after {
+            content: '▼';
+            position: absolute;
+            right: 50%;
+            top: 50%;
+            transform: translate(50%, -50%);
+            transition: transform 0.2s;
+            font-size: 1.2rem;
+            color: var(--muted);
+        }
+
+        .round-toggle.active::after {
+            transform: translate(50%, -50%) rotate(180deg);
+        }
+
+        .round-content {
+            position: relative;
+        }
+
+        .round-header.expanded::after {
+            content: '↑';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.2rem;
+            color: var(--primary);
+            opacity: 0.7;
+            z-index: 10;
+            pointer-events: none;
+            animation: pulse 3s infinite;
+            font-weight: bold;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .round-header.expanded:hover::after {
+            opacity: 0.9;
+            animation-duration: 1.5s;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 0.7;
+                transform: translate(-50%, -50%) scale(1);
+            }
+            50% {
+                opacity: 0.9;
+                transform: translate(-50%, -50%) scale(1.1);
+            }
+        }
+
+        .round-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            position: relative;
+        }
+
+        .round-details {
+            display: none;
+            margin-top: 1rem;
+            padding: 1rem;
+            border-top: 1px solid #e2e8f0;
+            background: #ffffff;
+            border-radius: 6px;
+            margin: 1rem 0;
+            color: #374151;
+            border: 1px solid #f3f4f6;
+        }
+
+        .model-response {
+            background: #f8f9fa;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .model-name {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #2563eb;
+        }
+
+        .model-response div:not(.model-name) {
+            color: #374151;
+            font-weight: 500;
+        }
+
+        .error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .query-display {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 1.5rem;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: var(--fg);
+            font-style: italic;
+            position: relative;
+        }
+
+        .query-display::before {
+            content: '"';
+            font-size: 3rem;
+            color: var(--primary);
+            position: absolute;
+            top: -0.5rem;
+            left: 0.5rem;
+            opacity: 0.3;
+            font-family: serif;
+        }
+
+        .query-display::after {
+            content: '"';
+            font-size: 3rem;
+            color: var(--primary);
+            position: absolute;
+            bottom: -1.5rem;
+            right: 0.5rem;
+            opacity: 0.3;
+            font-family: serif;
+        }
+
+        /* Enhanced styling for AI response content */
+        .ai-response-content {
+            color: #374151;
+            line-height: 1.6;
+            font-size: 0.95rem;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .ai-response-content h1,
+        .ai-response-content h2,
+        .ai-response-content h3,
+        .ai-response-content h4,
+        .ai-response-content h5,
+        .ai-response-content h6 {
+            color: #1f2937;
+            font-weight: 600;
+            margin: 1rem 0 0.5rem 0;
+            line-height: 1.3;
+        }
+
+        .ai-response-content h1 { font-size: 1.5rem; }
+        .ai-response-content h2 { font-size: 1.3rem; }
+        .ai-response-content h3 { font-size: 1.1rem; }
+
+        .ai-response-content p {
+            margin: 0.75rem 0;
+            line-height: 1.6;
+        }
+
+        .ai-response-content ul,
+        .ai-response-content ol {
+            margin: 0.75rem 0;
+            padding-left: 1.5rem;
+        }
+
+        .ai-response-content li {
+            margin: 0.25rem 0;
+            line-height: 1.5;
+        }
+
+        .ai-response-content strong {
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .ai-response-content em {
+            font-style: italic;
+            color: #4b5563;
+        }
+
+        .ai-response-content code {
+            background: #f3f4f6;
+            padding: 0.125rem 0.25rem;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.875rem;
+            color: #d63384;
+        }
+
+        .ai-response-content pre {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 1rem;
+            margin: 1rem 0;
+            overflow-x: auto;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.875rem;
+            line-height: 1.4;
+        }
+
+        .ai-response-content pre code {
+            background: none;
+            padding: 0;
+            color: #374151;
+        }
+
+        /* Table styling */
+        .ai-response-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 0.875rem;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .ai-response-content th,
+        .ai-response-content td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+            vertical-align: top;
+        }
+
+        .ai-response-content th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 2px solid #d1d5db;
+        }
+
+        .ai-response-content tr:hover {
+            background: #f9fafb;
+        }
+
+        .ai-response-content tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Blockquote styling */
+        .ai-response-content blockquote {
+            border-left: 4px solid #3b82f6;
+            padding-left: 1rem;
+            margin: 1rem 0;
+            color: #4b5563;
+            font-style: italic;
+            background: #f8fafc;
+            padding: 1rem;
+            border-radius: 0 6px 6px 0;
+        }
+
+        /* Horizontal rule */
+        .ai-response-content hr {
+            border: none;
+            border-top: 1px solid #e5e7eb;
+            margin: 2rem 0;
+        }
+
+        /* Links */
+        .ai-response-content a {
+            color: #3b82f6;
+            text-decoration: underline;
+        }
+
+        .ai-response-content a:hover {
+            color: #1d4ed8;
+        }
+
+        /* Enhanced formatting for Tseek Response */
+        .ai-response-content .key-section-header {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1e40af;
+            margin: 1.5rem 0 1rem 0;
+            padding: 0.75rem 1rem;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border-left: 4px solid #3b82f6;
+            border-radius: 0 8px 8px 0;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+        }
+
+        .ai-response-content .bullet-header {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1e40af;
+            margin: 1rem 0 0.5rem 0;
+            padding: 0.5rem 0.75rem;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-left: 3px solid #3b82f6;
+            border-radius: 0 6px 6px 0;
+            display: inline-block;
+            box-shadow: 0 1px 3px rgba(59, 130, 246, 0.1);
+        }
+
+        /* Category-specific highlights */
+        .ai-response-content .highlight-weather {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            color: #92400e;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+            border: 1px solid #f59e0b;
+        }
+
+        .ai-response-content .highlight-ocean {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            color: #1e40af;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+            border: 1px solid #3b82f6;
+        }
+
+        .ai-response-content .highlight-crowds {
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+            color: #065f46;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+            border: 1px solid #10b981;
+        }
+
+        .ai-response-content .highlight-costs {
+            background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+            color: #991b1b;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+            border: 1px solid #ef4444;
+        }
+
+        .ai-response-content .highlight-events {
+            background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+            color: #6b21a8;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+            border: 1px solid #8b5cf6;
+        }
+
+        .ai-response-content .highlight-climate {
+            background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%);
+            color: #9a3412;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+            border: 1px solid #ea580c;
+        }
+
+        .ai-response-content .highlight-accommodation {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            color: #166534;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+            border: 1px solid #22c55e;
+        }
+
+        .ai-response-content .highlight-attractions {
+            background: linear-gradient(135deg, #fefce8 0%, #fef08a 100%);
+            color: #713f12;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+            border: 1px solid #eab308;
+        }
+
+        .ai-response-content .highlight-transport {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            color: #0c4a6e;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+            border: 1px solid #0284c7;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .ai-response-content .key-section-header {
+                font-size: 1rem;
+                margin: 1rem 0 0.75rem 0;
+                padding: 0.5rem 0.75rem;
+            }
+
+            .ai-response-content .bullet-header {
+                font-size: 0.9rem;
+                margin: 0.75rem 0 0.25rem 0;
+                padding: 0.4rem 0.6rem;
+            }
+
+            .ai-response-content .highlight-weather,
+            .ai-response-content .highlight-ocean,
+            .ai-response-content .highlight-crowds,
+            .ai-response-content .highlight-costs,
+            .ai-response-content .highlight-events,
+            .ai-response-content .highlight-climate,
+            .ai-response-content .highlight-accommodation,
+            .ai-response-content .highlight-attractions,
+            .ai-response-content .highlight-transport {
+                font-size: 0.9rem;
+                padding: 0.15rem 0.4rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <div class="logo"></div>
+                <h1>Tseek</h1>
+            </div>
+            <p>Truthful | Transparent | Trustworthy</p>
+        </div>
+
+        <!-- Input Form -->
+        <div class="card" id="inputForm">
+            <form onsubmit="submitQuery(event)">
+                <div class="form-group">
+                    <label for="question">Enter the question you Tseek a response to:</label>
+                    <textarea 
+                        id="question" 
+                        name="question" 
+                        rows="3" 
+                        placeholder="What is the meaning of life? How does photosynthesis work? What are the best practices for software development?"
+                        required
+                    ></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="confidenceSlider">Confidence Threshold: <span id="confidenceValue">95%</span></label>
+                    <div class="slider-container">
+                        <input 
+                            type="range" 
+                            id="confidenceSlider" 
+                            name="confidence" 
+                            min="50" 
+                            max="99" 
+                            value="95" 
+                            class="slider"
+                            oninput="updateConfidenceDisplay()"
+                        >
+                        <span class="confidence-display" id="confidenceDisplay">95%</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="budgetSlider">Budget (Max Rounds): <span id="budgetValue">10</span></label>
+                    <div class="slider-container">
+                        <input 
+                            type="range" 
+                            id="budgetSlider" 
+                            name="budget" 
+                            min="2" 
+                            max="50" 
+                            value="10" 
+                            class="slider"
+                            oninput="updateBudgetDisplay()"
+                        >
+                        <span class="confidence-display" id="budgetDisplay">10</span>
+                    </div>
+                    <div style="font-size: 0.9rem; color: var(--muted); margin-top: 0.5rem;">
+                        Higher budget = more rounds = more thorough consensus (but slower)
+                    </div>
+                </div>
+
+                <button type="submit" class="btn" id="submitBtn">
+                    Tseek it!
+                </button>
+            </form>
+        </div>
+
+        <!-- Loading State -->
+        <div class="loading hidden" id="loadingState">
+            <div class="spinner"></div>
+            <p>Tseeking the response to your query through the collaboration of multiple AI Engines</p>
+            <p style="font-size: 0.9rem; color: var(--muted); margin-top: 1rem;">
+                This may take 2-10 minutes depending on query complexity. Please wait...
+            </p>
+        </div>
+
+        <!-- Error Display -->
+        <div class="error hidden" id="errorDisplay"></div>
+
+        <!-- Results -->
+        <div class="results" id="resultsSection">
+            <!-- Original Query Display -->
+            <div class="card" id="originalQueryCard">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h2>Original Query</h2>
+                    <button onclick="startNewQuery()" class="btn" style="background: var(--success);">
+                        New Query
+                    </button>
+                </div>
+                <div class="query-display" id="originalQueryDisplay"></div>
+            </div>
+
+            <!-- Tseek Result -->
+            <div class="card">
+                <h2>Tseek Response</h2>
+                <div class="consensus-result" id="consensusResult">
+                    <div class="final-response-header">
+                        <div class="final-response-meta" id="finalResponseMeta"></div>
+                    </div>
+                    <div class="consensus-text ai-response-content" id="consensusText"></div>
+                    <div class="consensus-rationale" id="consensusRationale" style="display: none;">
+                        <button onclick="toggleRationale()" class="btn" style="background: var(--secondary); margin-bottom: 1rem;">
+                            <span id="rationaleToggle">Show</span> Logic & Rationale
+                        </button>
+                        <div id="rationaleContent" style="display: none;">
+                            <div class="ai-response-content" id="rationaleText"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Convergence Chart -->
+            <div class="card">
+                <div class="chart-container">
+                    <div class="chart-title">Consensus Convergence Over Rounds</div>
+                    <canvas class="chart" id="convergenceChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Round Details -->
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h2>Round Details (Transparent Audit)</h2>
+                    <div>
+                        <button onclick="expandAllRounds()" style="padding: 0.5rem 1rem; margin-right: 0.5rem; font-size: 0.9rem;">Expand All</button>
+                        <button onclick="collapseAllRounds()" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Collapse All</button>
+                    </div>
+                </div>
+                <div class="rounds-container" id="roundsContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentRunId = null;
+        let originalQuery = null;
+        let originalSettings = null;
+
+        function updateConfidenceDisplay() {
+            const slider = document.getElementById('confidenceSlider');
+            const display = document.getElementById('confidenceDisplay');
+            const value = document.getElementById('confidenceValue');
+            const confidence = slider.value;
+            
+            display.textContent = confidence + '%';
+            value.textContent = confidence + '%';
+        }
+
+        function updateBudgetDisplay() {
+            const slider = document.getElementById('budgetSlider');
+            const display = document.getElementById('budgetDisplay');
+            const value = document.getElementById('budgetValue');
+            const budget = slider.value;
+            
+            display.textContent = budget;
+            value.textContent = budget;
+        }
+
+        async function submitQuery(event) {
+            event.preventDefault();
+            
+            const question = document.getElementById('question').value;
+            const confidence = document.getElementById('confidenceSlider').value / 100;
+            const budget = parseInt(document.getElementById('budgetSlider').value);
+            
+            // Store the original query and settings
+            originalQuery = question;
+            originalSettings = {
+                budget: budget,
+                confidence: confidence * 100 // Convert back to percentage for display
+            };
+            
+            console.log('Captured original settings:', originalSettings);
+            
+            // Show loading state
+            document.getElementById('inputForm').style.display = 'none';
+            document.getElementById('loadingState').classList.remove('hidden');
+            document.getElementById('resultsSection').style.display = 'none';
+            hideError();
+
+            try {
+                // Submit query to backend with timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 minutes timeout
+                
+                const response = await fetch('/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: question,
+                        budget: budget,
+                        confidence_threshold: confidence
+                    }),
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                currentRunId = result.run_id;
+
+                console.log('Query result:', result);
+
+                // Get timeline data
+                console.log('Fetching timeline for run:', currentRunId);
+                const timelineResponse = await fetch(`/timeline/${currentRunId}`);
+                if (!timelineResponse.ok) {
+                    throw new Error('Failed to fetch timeline data');
+                }
+
+                const timelineData = await timelineResponse.json();
+                console.log('Timeline data fetched:', timelineData);
+
+                // Display results
+                displayResults(result, timelineData);
+
+            } catch (error) {
+                console.error('Error:', error);
+                let errorMessage = 'Failed to process query: ';
+                if (error.name === 'AbortError') {
+                    errorMessage = 'Query timed out after 10 minutes. The system is still processing - try again with a smaller budget or lower confidence threshold.';
+                } else {
+                    errorMessage += error.message;
+                }
+                showError(errorMessage);
+                document.getElementById('inputForm').style.display = 'block';
+            } finally {
+                document.getElementById('loadingState').classList.add('hidden');
+            }
+        }
+
+        function displayResults(result, timeline) {
+            console.log('=== DISPLAYING RESULTS ===');
+            console.log('Result:', result);
+            console.log('Timeline:', timeline);
+
+            // Display the original query
+            document.getElementById('originalQueryDisplay').textContent = originalQuery || result.query;
+
+            // Show final response meta information
+            const bestClaimScore = timeline.length > 0 && timeline[timeline.length - 1].top_claims ? 
+                timeline[timeline.length - 1].top_claims[0].score : 0;
+            
+            // Get the original settings that were captured during query submission
+            const originalBudget = originalSettings ? originalSettings.budget : 6;
+            const originalConfidence = originalSettings ? originalSettings.confidence : 80;
+            
+            console.log('Using original settings for display:', { originalBudget, originalConfidence });
+            
+            document.getElementById('finalResponseMeta').innerHTML = `
+                <div class="meta-item" onclick="showExplanation('tseek', event)">
+                    <div class="meta-label">Tseek Score</div>
+                    <div class="meta-value tseek-score">${(bestClaimScore * 100).toFixed(1)}%</div>
+                </div>
+                <div class="meta-item" onclick="showExplanation('confidence', event)">
+                    <div class="meta-label">Confidence</div>
+                    <div class="meta-value">${(result.confidence * 100).toFixed(1)}%</div>
+                </div>
+                <div class="meta-item" onclick="showExplanation('rounds', event)">
+                    <div class="meta-label">Rounds</div>
+                    <div class="meta-value">${result.rounds}</div>
+                </div>
+                <div class="meta-item" onclick="showExplanation('duels', event)">
+                    <div class="meta-label">Duels</div>
+                    <div class="meta-value">${result.total_duels}</div>
+                </div>
+                <div class="meta-item settings-item" onclick="showExplanation('settings', event)">
+                    <div class="meta-label">Your Settings</div>
+                    <div class="meta-value settings-value">
+                        <div style="font-size: 0.8rem; margin-bottom: 0.2rem;">Budget: ${originalBudget}</div>
+                        <div style="font-size: 0.8rem;">Confidence: ${originalConfidence}%</div>
+                    </div>
+                </div>
+            `;
+
+            // Extract and show only the clean final response as "Tseek Response"
+            const bestClaim = result.best_claim;
+            let tseekResponse = '';
+            
+            console.log('Processing best claim for Tseek Response extraction...');
+            console.log('Best claim length:', bestClaim.length);
+            console.log('Best claim preview:', bestClaim.substring(0, 500) + '...');
+            
+            // Strategy 1: Look for "IMPROVED COMPREHENSIVE RESPONSE" section (highest priority)
+            const improvedComprehensiveMatch = bestClaim.match(/(?:### |## |# )?IMPROVED COMPREHENSIVE RESPONSE[\s\S]*?(?=\n\n\n|\n###|\n##|\n#|$)/i);
+            if (improvedComprehensiveMatch && improvedComprehensiveMatch[0]) {
+                tseekResponse = improvedComprehensiveMatch[0];
+                console.log('Found IMPROVED COMPREHENSIVE RESPONSE section');
+            }
+            
+            // Strategy 2: Look for "Improved Response" section (second priority)
+            if (!tseekResponse) {
+                const improvedMatch = bestClaim.match(/(?:### |## |# )?(?:IMPROVED RESPONSE|Improved Response)[\s\S]*?(?=\n\n\n|\n###|\n##|\n#|$)/i);
+                if (improvedMatch && improvedMatch[0]) {
+                    tseekResponse = improvedMatch[0];
+                    console.log('Found Improved Response section');
+                }
+            }
+            
+            // Strategy 3: Look for content after critical analysis sections
+            if (!tseekResponse) {
+                // Find where critical analysis ends and actual response begins
+                const criticalAnalysisEnd = bestClaim.search(/(?:CRITICAL ANALYSIS|Critical Analysis)[\s\S]*?(?=IMPROVED|Synthesis|Final Answer|Conclusion|$)/i);
+                
+                if (criticalAnalysisEnd !== -1) {
+                    // Look for the start of the improved response after critical analysis
+                    const afterCriticalAnalysis = bestClaim.substring(criticalAnalysisEnd);
+                    const improvedStart = afterCriticalAnalysis.search(/(?:IMPROVED|Synthesis|Final Answer|Conclusion)/i);
+                    
+                    if (improvedStart !== -1) {
+                        tseekResponse = afterCriticalAnalysis.substring(improvedStart);
+                        console.log('Found content after critical analysis');
+                    }
+                }
+            }
+            
+            // Strategy 4: Look for substantial content by skipping analysis sections
+            if (!tseekResponse) {
+                const lines = bestClaim.split('\n');
+                let contentStartIndex = -1;
+                
+                // Find where analysis sections end and actual content begins
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    
+                    // Skip all analysis-related headers and content
+                    if (line.match(/^(?:#{1,6}\s*)?(?:CRITICAL ANALYSIS|Critical Analysis|Strengths of|Weaknesses of|Analysis of|Limitations|Gaps)/i)) {
+                        // Skip this line and continue
+                        continue;
+                    }
+                    
+                    // Look for improved response markers
+                    if (line.match(/^(?:#{1,6}\s*)?(?:IMPROVED|Synthesis|Final Answer|Conclusion)/i)) {
+                        contentStartIndex = i;
+                        break;
+                    }
+                    
+                    // Look for substantial content that's not analysis
+                    if (line.length > 30 && 
+                        !line.includes('**') && 
+                        !line.includes('Analysis') && 
+                        !line.includes('Strengths') && 
+                        !line.includes('Weaknesses') &&
+                        !line.match(/^#{1,6}\s/)) {
+                        contentStartIndex = i;
+                        break;
+                    }
+                }
+                
+                if (contentStartIndex !== -1) {
+                    tseekResponse = lines.slice(contentStartIndex).join('\n').trim();
+                    console.log('Found content through line analysis');
+                }
+            }
+            
+            // Strategy 5: Last resort - use the full response but clean it aggressively
+            if (!tseekResponse || tseekResponse.length < 100) {
+                tseekResponse = bestClaim;
+                console.log('Using full response as last resort');
+            }
+            
+            // Clean up the response
+            tseekResponse = cleanResponseText(tseekResponse);
+            
+            console.log('Final Tseek Response length:', tseekResponse.length);
+            console.log('Final Tseek Response preview:', tseekResponse.substring(0, 300) + '...');
+            
+            // Update the header to show "Tseek Response" instead of "Consensus Response"
+            const consensusHeader = document.querySelector('#consensusResult').parentElement.querySelector('h2');
+            if (consensusHeader) {
+                consensusHeader.textContent = 'Tseek Response';
+            }
+            
+            document.getElementById('consensusText').innerHTML = formatResponseText(tseekResponse);
+            
+            // Show rationale section if available
+            if (timeline.length > 0) {
+                const lastRound = timeline[timeline.length - 1];
+                if (lastRound.summary) {
+                    document.getElementById('rationaleText').innerHTML = formatResponseText(lastRound.summary);
+                    document.getElementById('consensusRationale').style.display = 'block';
+                }
+            }
+
+            // Show results section first
+            document.getElementById('resultsSection').style.display = 'block';
+
+            // Draw convergence chart
+            drawConvergenceChart(timeline);
+
+            // Display round details
+            displayRoundDetails(timeline);
+        }
+
+        function drawConvergenceChart(timeline) {
+            console.log('Drawing convergence chart...');
+            
+            const canvas = document.getElementById('convergenceChart');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size
+            const containerWidth = canvas.parentElement.offsetWidth;
+            canvas.width = containerWidth - 32;
+            canvas.height = 200;
+            
+            const width = canvas.width;
+            const height = canvas.height;
+            const padding = 40;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, width, height);
+            
+            if (timeline.length === 0) {
+                console.log('No timeline data for chart');
+                return;
+            }
+            
+            // Extract convergence scores
+            const scores = timeline.map(round => round.convergence_score);
+            console.log('Convergence scores:', scores);
+            
+            // Draw background
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, height);
+            
+            // Draw axes
+            ctx.strokeStyle = '#f3f4f6';
+            ctx.lineWidth = 1;
+            
+            // Y-axis
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, height - padding);
+            ctx.stroke();
+            
+            // X-axis
+            ctx.beginPath();
+            ctx.moveTo(padding, height - padding);
+            ctx.lineTo(width - padding, height - padding);
+            ctx.stroke();
+            
+            // Draw grid lines and labels
+            ctx.fillStyle = '#9ca3af';
+            ctx.font = '11px -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
+            
+            // Y-axis labels
+            for (let i = 0; i <= 10; i++) {
+                const y = height - padding - (i / 10) * (height - 2 * padding);
+                const value = (i * 10) + '%';
+                ctx.fillText(value, 5, y + 4);
+                
+                if (i > 0) {
+                    ctx.strokeStyle = '#fafafa';
+                    ctx.beginPath();
+                    ctx.moveTo(padding, y);
+                    ctx.lineTo(width - padding, y);
+                    ctx.stroke();
+                }
+            }
+            
+            // X-axis labels
+            for (let i = 0; i < timeline.length; i++) {
+                const x = padding + (i / Math.max(timeline.length - 1, 1)) * (width - 2 * padding);
+                ctx.fillText(`R${i + 1}`, x - 10, height - 10);
+            }
+            
+            // Draw convergence line
+            if (timeline.length > 1) {
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                
+                for (let i = 0; i < timeline.length; i++) {
+                    const x = padding + (i / Math.max(timeline.length - 1, 1)) * (width - 2 * padding);
+                    const y = height - padding - (scores[i]) * (height - 2 * padding);
+                    
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                
+                ctx.stroke();
+                
+                // Draw points
+                ctx.fillStyle = '#000000';
+                for (let i = 0; i < timeline.length; i++) {
+                    const x = padding + (i / Math.max(timeline.length - 1, 1)) * (width - 2 * padding);
+                    const y = height - padding - (scores[i]) * (height - 2 * padding);
+                    
+                    ctx.beginPath();
+                    ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+            } else {
+                // Single point
+                const x = padding + (width - 2 * padding) / 2;
+                const y = height - padding - (scores[0]) * (height - 2 * padding);
+                
+                ctx.fillStyle = '#000000';
+                ctx.beginPath();
+                ctx.arc(x, y, 6, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            
+            console.log('Chart drawing completed');
+        }
+
+        function displayRoundDetails(timeline) {
+            console.log('=== DISPLAY ROUND DETAILS DEBUG ===');
+            console.log('Timeline data received:', timeline);
+            console.log('Timeline length:', timeline.length);
+            
+            const container = document.getElementById('roundsContainer');
+            container.innerHTML = '';
+            
+            timeline.forEach((round, index) => {
+                console.log(`Processing round ${index + 1}:`, round);
+                
+                const roundDiv = document.createElement('div');
+                roundDiv.className = 'round-toggle';
+                roundDiv.onclick = () => toggleRound(index);
+                
+                const confidence = (round.convergence_score * 100).toFixed(1);
+                
+                roundDiv.innerHTML = `
+                    <div class="round-header">
+                        <span>Round ${round.round_index}</span>
+                        <span class="confidence-badge">${confidence}% confidence</span>
+                    </div>
+                    <div class="round-details" id="round-${index}">
+                        <div class="model-response">
+                            <div class="model-name">Best Claim</div>
+                            <div class="ai-response-content">${formatResponseText(round.best_claim_text || 'No claim selected')}</div>
+                        </div>
+                        <div class="model-response">
+                            <div class="model-name">Round Summary</div>
+                            <div class="ai-response-content">${formatResponseText(round.summary || 'No summary available')}</div>
+                        </div>
+                        <div class="model-response">
+                            <div class="model-name">All Engine Responses</div>
+                            ${round.top_claims ? round.top_claims.map((claim, idx) => {
+                                // Extract engine name from claim.cid (format: [engine-name] or [engine-name-r2])
+                                const engineMatch = claim.cid.match(/^\[([^\]]+)\]/);
+                                const engineName = engineMatch ? engineMatch[1] : 'Unknown';
+                                const claimText = claim.cid.replace(/^\[[^\]]+\]\s*/, ''); // Remove engine prefix
+                                
+                                return `
+                                    <div style="margin-bottom: 1rem; padding: 1rem; background: #fafafa; border-radius: 8px; border-left: 4px solid #000000;">
+                                        <div style="font-weight: 600; color: #000000; margin-bottom: 0.5rem;">
+                                            ${engineName} (Tseek Score: ${(claim.score * 100).toFixed(1)}%)
+                                </div>
+                                        <div class="ai-response-content">
+                                            ${formatResponseText(claimText)}
+                                        </div>
+                                        <div style="font-size: 0.8rem; color: #6b7280; margin-top: 0.5rem;">
+                                            Confidence Interval: ${(claim.ci_low * 100).toFixed(1)}% - ${(claim.ci_high * 100).toFixed(1)}%
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('') : 'No claims available'}
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(roundDiv);
+                
+                // Test if content is actually there
+                const testContent = roundDiv.querySelector('.round-details');
+                console.log(`Round ${index} content created:`, testContent ? 'YES' : 'NO');
+                if (testContent) {
+                    console.log(`Round ${index} best claim length:`, testContent.querySelector('.model-response')?.textContent?.length || 0);
+                }
+                
+                // All rounds start collapsed by default
+            });
+        }
+
+        function toggleRound(index) {
+            const roundDetails = document.getElementById(`round-${index}`);
+            const roundToggle = roundDetails.parentElement;
+            const roundHeader = roundToggle.querySelector('.round-header');
+            
+            console.log(`Toggling round ${index}`);
+            
+            // Toggle the current round (open if closed, close if open)
+            if (roundDetails.style.display === 'none' || roundDetails.style.display === '') {
+                // Open the round
+                roundDetails.style.display = 'block';
+                roundToggle.classList.add('active');
+                roundHeader.classList.add('expanded');
+                console.log(`Opened round ${index}`);
+            } else {
+                // Close the round
+                roundDetails.style.display = 'none';
+                roundToggle.classList.remove('active');
+                roundHeader.classList.remove('expanded');
+                console.log(`Closed round ${index}`);
+            }
+        }
+
+        function expandAllRounds() {
+            console.log('Expanding all rounds');
+            document.querySelectorAll('.round-details').forEach((details, index) => {
+                const roundToggle = details.parentElement;
+                const roundHeader = roundToggle.querySelector('.round-header');
+                details.style.display = 'block';
+                roundToggle.classList.add('active');
+                roundHeader.classList.add('expanded');
+            });
+        }
+
+        function collapseAllRounds() {
+            console.log('Collapsing all rounds');
+            document.querySelectorAll('.round-details').forEach((details, index) => {
+                const roundToggle = details.parentElement;
+                const roundHeader = roundToggle.querySelector('.round-header');
+                details.style.display = 'none';
+                roundToggle.classList.remove('active');
+                roundHeader.classList.remove('expanded');
+            });
+        }
+
+        function formatStopReason(reason) {
+            const reasons = {
+                'confidence_threshold': 'Confidence threshold reached',
+                'ci_separation': 'Statistical significance achieved',
+                'max_rounds': 'Maximum rounds reached',
+                'budget_exhausted': 'Budget exhausted'
+            };
+            return reasons[reason] || reason;
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorDisplay');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+        }
+
+        function hideError() {
+            document.getElementById('errorDisplay').classList.add('hidden');
+        }
+
+        function cleanResponseText(text) {
+            if (!text) return '';
+            
+            let cleaned = text;
+            
+            // If this is already an "IMPROVED COMPREHENSIVE RESPONSE" section, clean it more carefully
+            if (cleaned.includes('IMPROVED COMPREHENSIVE RESPONSE')) {
+                // Remove the header but keep the content
+                cleaned = cleaned.replace(/^(?:#{1,6}\s*)?IMPROVED COMPREHENSIVE RESPONSE\s*/i, '');
+            }
+            
+            // If this is an "Improved Response" section, remove the header
+            if (cleaned.includes('Improved Response')) {
+                cleaned = cleaned.replace(/^(?:#{1,6}\s*)?(?:IMPROVED RESPONSE|Improved Response)\s*/i, '');
+            }
+            
+            // Remove any remaining analysis sections that might have been included
+            cleaned = cleaned
+                // Remove critical analysis sections
+                .replace(/### (?:CRITICAL ANALYSIS|Critical Analysis)[\s\S]*?(?=\n\n\n|\n###|\n##|\n#|$)/gi, '')
+                .replace(/## (?:CRITICAL ANALYSIS|Critical Analysis)[\s\S]*?(?=\n\n\n|\n###|\n##|\n#|$)/gi, '')
+                .replace(/# (?:CRITICAL ANALYSIS|Critical Analysis)[\s\S]*?(?=\n\n\n|\n###|\n##|\n#|$)/gi, '')
+                
+                // Remove analysis subsections
+                .replace(/#### (?:Strengths of|Weaknesses of|Analysis of)[\s\S]*?(?=\n\n\n|\n###|\n##|\n#|$)/gi, '')
+                .replace(/### (?:Strengths of|Weaknesses of|Analysis of)[\s\S]*?(?=\n\n\n|\n###|\n##|\n#|$)/gi, '')
+                .replace(/## (?:Strengths of|Weaknesses of|Analysis of)[\s\S]*?(?=\n\n\n|\n###|\n##|\n#|$)/gi, '')
+                
+                // Remove synthesis and improvement sections
+                .replace(/### (?:Synthesis|Combination|Improvement Strategy)[\s\S]*?(?=\n\n\n|\n###|\n##|\n#|$)/gi, '')
+                .replace(/## (?:Synthesis|Combination|Improvement Strategy)[\s\S]*?(?=\n\n\n|\n###|\n##|\n#|$)/gi, '')
+                
+                // Remove engine-specific analysis
+                .replace(/\*\*(?:Anthropic|OpenAI|XAI|Gemini) Engine[\s\S]*?(?=\*\*|\n\n\n|\n###|\n##|\n#|$)/gi, '')
+                
+                // Remove limitations and gaps sections
+                .replace(/#### (?:Limitations|Gaps|Weaknesses)[\s\S]*?(?=\n\n\n|\n###|\n##|\n#|$)/gi, '')
+                .replace(/### (?:Limitations|Gaps|Weaknesses)[\s\S]*?(?=\n\n\n|\n###|\n##|\n#|$)/gi, '');
+            
+            // Clean up formatting
+            cleaned = cleaned
+                // Remove markdown headers (but preserve the content structure)
+                .replace(/^#{1,6}\s*/gm, '')
+                // Remove bold/italic markdown
+                .replace(/\*\*(.*?)\*\*/g, '$1')
+                .replace(/\*(.*?)\*/g, '$1')
+                // Remove bullet points but preserve the content
+                .replace(/^\s*[-*+]\s*/gm, '')
+                // Clean up multiple newlines
+                .replace(/\n{3,}/g, '\n\n')
+                // Remove engine prefixes
+                .replace(/^\[[^\]]+\]\s*/gm, '')
+                // Remove any trailing analysis text
+                .replace(/\n\nas current best\.?\s*$/i, '')
+                // Trim whitespace
+                .trim();
+            
+            return cleaned;
+        }
+
+        function formatResponseText(text) {
+            if (!text) return '';
+            
+            // Convert basic markdown-like formatting to HTML with clean, readable output
+            let formatted = text
+                // Headers (convert to clean sections)
+                .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+                .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+                .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+                
+                // Bold text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                
+                // Italic text
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                
+                // Code blocks
+                .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+                
+                // Inline code
+                .replace(/`([^`]+)`/g, '<code>$1</code>')
+                
+                // Lists
+                .replace(/^\* (.*$)/gim, '<li>$1</li>')
+                .replace(/^- (.*$)/gim, '<li>$1</li>')
+                .replace(/^(\d+)\. (.*$)/gim, '<li>$2</li>')
+                
+                // Horizontal rules
+                .replace(/^---$/gim, '<hr>')
+                
+                // Line breaks
+                .replace(/\n/g, '<br>');
+            
+            // Wrap consecutive <li> elements in <ul>
+            formatted = formatted.replace(/(<li>.*<\/li>)(<br><li>.*<\/li>)*/g, function(match) {
+                return '<ul>' + match.replace(/<br>/g, '') + '</ul>';
+            });
+            
+            // Clean up extra <br> tags around block elements
+            formatted = formatted
+                .replace(/<br><(h[1-6]|ul|ol|pre|hr)/g, '<$1')
+                .replace(/(<\/h[1-6]>|<li>|<\/ul>|<\/ol>|<\/pre>|<\/hr>)<br>/g, '$1')
+                .replace(/<br><br>/g, '<br>');
+            
+            return formatted;
+        }
+
+        function toggleRationale() {
+            const content = document.getElementById('rationaleContent');
+            const toggle = document.getElementById('rationaleToggle');
+            
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                toggle.textContent = 'Hide';
+            } else {
+                content.style.display = 'none';
+                toggle.textContent = 'Show';
+            }
+        }
+
+        function startNewQuery() {
+            // Reset everything and show the input form
+            document.getElementById('inputForm').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('question').value = '';
+            hideError();
+            
+            // Clear stored data
+            originalQuery = null;
+            originalSettings = null;
+            currentRunId = null;
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetForm() {
+            document.getElementById('inputForm').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('question').value = '';
+            hideError();
+        }
+
+        // Explanation tooltip functions
+        let currentTooltip = null;
+        
+        function showExplanation(type, event) {
+            event.stopPropagation(); // Prevent event bubbling
+            
+            hideExplanation(); // Hide any existing tooltip
+            
+            const explanations = {
+                tseek: `
+                    <strong>Tseek Score</strong><br><br>
+                    The Tseek Score measures the quality and reliability of our consensus response. It's calculated based on how well the AI engines agree and the strength of their reasoning.<br><br>
+                    <strong>Score Ranges:</strong><br>
+                    • 90-100%: Excellent consensus, high reliability<br>
+                    • 80-89%: Good consensus, reliable<br>
+                    • 70-79%: Moderate consensus, some uncertainty<br>
+                    • 60-69%: Weak consensus, limited reliability<br>
+                    • Below 60%: Poor consensus, unreliable<br><br>
+                    Higher scores indicate more trustworthy responses.
+                `,
+                confidence: `
+                    <strong>Confidence Level</strong><br><br>
+                    This shows how confident the system is in the final consensus. It's based on the agreement between AI engines and the convergence of their responses.<br><br>
+                    <strong>How to interpret:</strong><br>
+                    • 95%+: Very high confidence, reliable<br>
+                    • 85-94%: High confidence, trustworthy<br>
+                    • 70-84%: Moderate confidence, generally reliable<br>
+                    • Below 70%: Lower confidence, use with caution<br><br>
+                    You can set your desired confidence threshold using the slider above. The system will continue until it reaches this level or exhausts the budget.
+                `,
+                rounds: `
+                    <strong>Consensus Rounds</strong><br><br>
+                    Each round represents one iteration of the consensus process where AI engines refine their responses based on previous rounds.<br><br>
+                    <strong>Purpose:</strong><br>
+                    • Round 1: Initial responses from all engines<br>
+                    • Round 2+: Engines analyze and improve based on others' responses<br>
+                    • More rounds = more thorough consensus<br><br>
+                    <strong>Trade-offs:</strong><br>
+                    • More rounds = better consensus but slower<br>
+                    • Fewer rounds = faster but potentially less reliable<br><br>
+                    Set your budget using the "Budget" slider to control the maximum number of rounds.
+                `,
+                duels: `
+                    <strong>AI Duels</strong><br><br>
+                    This is our novel approach where AI engines debate each other to find the best answer. Each duel is a head-to-head comparison between two responses.<br><br>
+                    <strong>How it works:</strong><br>
+                    • AI engines generate responses to your question<br>
+                    • They then analyze and critique each other's responses<br>
+                    • The system pairs responses for direct comparison<br>
+                    • A referee AI judges which response is better<br>
+                    • Winners get higher scores, losers get lower scores<br><br>
+                    This competitive process drives the engines to improve their responses, leading to higher Tseek Scores and better consensus.
+                `,
+                settings: `
+                    <strong>Your Query Settings</strong><br><br>
+                    This shows the exact settings you used when submitting your query. These parameters control how the consensus process works.<br><br>
+                    <strong>Budget:</strong> Maximum number of consensus rounds the system will run. Higher budgets allow for more thorough analysis but take longer.<br><br>
+                    <strong>Confidence Threshold:</strong> The minimum confidence level you want to achieve. The system will continue until it reaches this level or exhausts the budget.<br><br>
+                    <strong>Comparing with Results:</strong><br>
+                    • If rounds used < budget: You could try a higher budget for even better results<br>
+                    • If confidence reached threshold: Your settings were optimal<br>
+                    • If confidence below threshold: Try lowering the threshold or increasing the budget
+                `
+            };
+            
+            const tooltip = document.createElement('div');
+            tooltip.className = 'explanation-tooltip';
+            tooltip.innerHTML = explanations[type];
+            tooltip.style.display = 'block';
+            tooltip.style.opacity = '0';
+            tooltip.style.transform = 'translateY(-10px)';
+            
+            document.body.appendChild(tooltip);
+            currentTooltip = tooltip;
+            
+            // Position the tooltip
+            const metaItem = event.currentTarget;
+            const rect = metaItem.getBoundingClientRect();
+            const tooltipRect = tooltip.getBoundingClientRect();
+            
+            // Center the tooltip horizontally and position below the meta item
+            let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+            let top = rect.bottom + 15;
+            
+            // Adjust if tooltip goes off screen
+            if (left < 10) left = 10;
+            if (left + tooltipRect.width > window.innerWidth - 10) {
+                left = window.innerWidth - tooltipRect.width - 10;
+            }
+            if (top + tooltipRect.height > window.innerHeight - 10) {
+                top = rect.top - tooltipRect.height - 15;
+            }
+            
+            tooltip.style.left = left + 'px';
+            tooltip.style.top = top + 'px';
+            
+            // Animate in
+            setTimeout(() => {
+                tooltip.style.opacity = '1';
+                tooltip.style.transform = 'translateY(0)';
+            }, 10);
+            
+            // Hide tooltip when clicking elsewhere
+            document.addEventListener('click', hideExplanation, { once: true });
+        }
+        
+        function hideExplanation() {
+            if (currentTooltip) {
+                currentTooltip.style.opacity = '0';
+                currentTooltip.style.transform = 'translateY(-10px)';
+                setTimeout(() => {
+                    if (currentTooltip && currentTooltip.parentNode) {
+                        currentTooltip.remove();
+                    }
+                    currentTooltip = null;
+                }, 200);
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateConfidenceDisplay();
+            updateBudgetDisplay();
+        });
+    </script>
+</body>
+</html>

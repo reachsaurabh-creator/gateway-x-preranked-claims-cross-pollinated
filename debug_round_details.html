@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Round Details Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; }
+        .rounds-container { margin-top: 2rem; }
+        .round-toggle { width: 100%; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; margin-bottom: 0.5rem; cursor: pointer; transition: all 0.2s; text-align: left; position: relative; }
+        .round-toggle:hover { background: #e2e8f0; }
+        .round-toggle.active { background: #2563eb; color: white; border-color: #2563eb; }
+        .round-toggle::after { content: '▼'; position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); transition: transform 0.2s; }
+        .round-toggle.active::after { transform: translateY(-50%) rotate(180deg); }
+        .round-header { display: flex; justify-content: space-between; align-items: center; font-weight: 600; }
+        .round-details { display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; }
+        .round-details.active { display: block; }
+        .model-response { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 1rem; margin-bottom: 1rem; }
+        .model-name { font-weight: 600; margin-bottom: 0.5rem; color: #2563eb; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Round Details Debug Test</h1>
+    
+    <div class="test-section">
+        <h3>Test with Real Data:</h3>
+        <button onclick="testRoundDetails()">Test Round Details</button>
+        <div id="test-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Round Details:</h3>
+        <div class="rounds-container" id="roundsContainer"></div>
+    </div>
+
+    <script>
+        async function testRoundDetails() {
+            try {
+                console.log('Testing round details...');
+                
+                // Get real timeline data
+                const timelineResponse = await fetch('/timeline/a28caf8568f7');
+                if (!timelineResponse.ok) {
+                    throw new Error('Failed to fetch timeline data');
+                }
+                
+                const timelineData = await timelineResponse.json();
+                console.log('Timeline data received:', timelineData);
+                
+                // Display round details
+                displayRoundDetails(timelineData);
+                
+                document.getElementById('test-result').innerHTML = `
+                    <div class="success">
+                        ✅ Successfully loaded ${timelineData.length} rounds of data
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('test-result').innerHTML = `
+                    <div class="error">❌ Error: ${error.message}</div>
+                `;
+            }
+        }
+        
+        function displayRoundDetails(timeline) {
+            console.log('Displaying round details...');
+            const container = document.getElementById('roundsContainer');
+            container.innerHTML = '';
+            
+            timeline.forEach((round, index) => {
+                console.log(`Processing round ${index + 1}:`, round);
+                
+                const roundDiv = document.createElement('div');
+                roundDiv.className = 'round-toggle';
+                roundDiv.onclick = () => toggleRound(index);
+                
+                const confidence = (round.convergence_score * 100).toFixed(1);
+                const confidenceClass = confidence >= 90 ? 'confidence-high' : 
+                                      confidence >= 70 ? 'confidence-medium' : 'confidence-low';
+                
+                roundDiv.innerHTML = `
+                    <div class="round-header">
+                        <span>Round ${round.round_index}</span>
+                        <span class="confidence-badge ${confidenceClass}">${confidence}% confidence</span>
+                    </div>
+                    <div class="round-details" id="round-${index}">
+                        <div class="model-response">
+                            <div class="model-name">Best Claim</div>
+                            <div>${round.best_claim_text || 'No claim selected'}</div>
+                        </div>
+                        <div class="model-response">
+                            <div class="model-name">Round Summary</div>
+                            <div>${round.summary || 'No summary available'}</div>
+                        </div>
+                        ${round.top_claims ? `
+                            <div class="model-response">
+                                <div class="model-name">Top Claims</div>
+                                ${round.top_claims.slice(0, 3).map(claim => `
+                                    <div style="margin-bottom: 0.5rem;">
+                                        <strong>${claim.cid}:</strong> Score ${(claim.score * 100).toFixed(1)}%
+                                        (CI: ${(claim.ci_low * 100).toFixed(1)}% - ${(claim.ci_high * 100).toFixed(1)}%)
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+                
+                container.appendChild(roundDiv);
+                
+                // Auto-expand the first round to show content immediately
+                if (index === 0) {
+                    // Add active class directly to make first round visible
+                    const roundDetails = document.getElementById(`round-${index}`);
+                    const roundToggle = roundDetails.parentElement;
+                    roundDetails.classList.add('active');
+                    roundToggle.classList.add('active');
+                    console.log('First round activated:', roundDetails.classList.contains('active'));
+                    console.log('Round details element:', roundDetails);
+                    console.log('Round details style display:', window.getComputedStyle(roundDetails).display);
+                }
+            });
+        }
+        
+        function toggleRound(index) {
+            const roundDetails = document.getElementById(`round-${index}`);
+            const roundToggle = roundDetails.parentElement;
+            
+            console.log('Toggling round', index, 'Current active state:', roundDetails.classList.contains('active'));
+            
+            // Close all other rounds
+            document.querySelectorAll('.round-details').forEach(details => {
+                if (details !== roundDetails) {
+                    details.classList.remove('active');
+                    details.parentElement.classList.remove('active');
+                }
+            });
+            
+            // Toggle current round
+            roundDetails.classList.toggle('active');
+            roundToggle.classList.toggle('active');
+            
+            console.log('After toggle - active state:', roundDetails.classList.contains('active'));
+            console.log('Round details style display:', window.getComputedStyle(roundDetails).display);
+        }
+    </script>
+</body>
+</html>
+
+

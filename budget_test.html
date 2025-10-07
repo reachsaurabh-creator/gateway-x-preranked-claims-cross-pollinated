@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Budget Configuration Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        .info { color: blue; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>Budget Configuration Test</h1>
+    
+    <div class="test-section">
+        <h3>Test Different Budget Settings:</h3>
+        <button onclick="testBudget(2)">Test Budget: 2 rounds</button>
+        <button onclick="testBudget(5)">Test Budget: 5 rounds</button>
+        <button onclick="testBudget(10)">Test Budget: 10 rounds</button>
+        <button onclick="testBudget(20)">Test Budget: 20 rounds</button>
+    </div>
+    
+    <div id="results"></div>
+
+    <script>
+        async function testBudget(budget) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML += `<div class="result"><strong>Testing Budget: ${budget} rounds</strong></div>`;
+            
+            try {
+                const response = await fetch('/query', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query: "What is the best way to learn a new skill?",
+                        budget: budget,
+                        confidence_threshold: 0.8
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                // Get timeline data
+                const timelineResponse = await fetch(`/timeline/${result.run_id}`);
+                const timelineData = await timelineResponse.json();
+                
+                resultsDiv.innerHTML += `
+                    <div class="result">
+                        <div class="success">✅ Budget ${budget} - SUCCESS</div>
+                        <div class="info">Rounds executed: ${result.rounds}</div>
+                        <div class="info">Total duels: ${result.total_duels}</div>
+                        <div class="info">Stop reason: ${result.stop_reason}</div>
+                        <div class="info">Timeline rounds: ${timelineData.length}</div>
+                        <div class="info">Final confidence: ${(result.confidence * 100).toFixed(1)}%</div>
+                    </div>
+                `;
+                
+            } catch (error) {
+                resultsDiv.innerHTML += `
+                    <div class="result">
+                        <div class="error">❌ Budget ${budget} - ERROR: ${error.message}</div>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
+
+

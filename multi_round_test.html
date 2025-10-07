@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Round Expansion Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
+        .success { color: green; font-weight: bold; }
+        .info { color: blue; }
+        .round { margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; }
+        .round-header { 
+            background: #f0f0f0; 
+            padding: 15px; 
+            cursor: pointer; 
+            font-weight: bold;
+            border-radius: 8px 8px 0 0;
+        }
+        .round-header:hover { background: #e0e0e0; }
+        .round-header.active { background: #007bff; color: white; }
+        .round-content { 
+            padding: 15px; 
+            background: white;
+            border-radius: 0 0 8px 8px;
+            display: none;
+        }
+        .round-content.active { display: block; }
+        .claim-box { 
+            background: #f8f9fa; 
+            border: 1px solid #dee2e6; 
+            padding: 10px; 
+            margin: 10px 0; 
+            border-radius: 4px; 
+        }
+        .claim-title { font-weight: bold; color: #007bff; margin-bottom: 5px; }
+        button { padding: 8px 16px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>Multi-Round Expansion Test</h1>
+    
+    <div class="test-section">
+        <h3>Test Multi-Round Expansion:</h3>
+        <button onclick="testMultiRound()">Load Test Data</button>
+        <button onclick="expandAll()">Expand All Rounds</button>
+        <button onclick="collapseAll()">Collapse All Rounds</button>
+    </div>
+    
+    <div id="container"></div>
+
+    <script>
+        function testMultiRound() {
+            // Simulate multiple rounds of data
+            const testData = [
+                {
+                    round_index: 1,
+                    convergence_score: 0.2,
+                    best_claim_text: "Leadership requires clear communication and vision setting.",
+                    summary: "Round 1: Initial claims focus on communication and vision.",
+                    top_claims: [
+                        { cid: "claim-A", score: 0.6, ci_low: 0.5, ci_high: 0.7 },
+                        { cid: "claim-B", score: 0.4, ci_low: 0.3, ci_high: 0.5 }
+                    ]
+                },
+                {
+                    round_index: 2,
+                    convergence_score: 0.4,
+                    best_claim_text: "Effective leadership combines communication, empathy, and strategic thinking.",
+                    summary: "Round 2: Claims evolve to include empathy and strategic thinking.",
+                    top_claims: [
+                        { cid: "claim-C", score: 0.7, ci_low: 0.6, ci_high: 0.8 },
+                        { cid: "claim-A", score: 0.3, ci_low: 0.2, ci_high: 0.4 }
+                    ]
+                },
+                {
+                    round_index: 3,
+                    convergence_score: 0.6,
+                    best_claim_text: "Great leaders inspire through authentic communication, emotional intelligence, and decisive action.",
+                    summary: "Round 3: Consensus emerging on authentic communication and emotional intelligence.",
+                    top_claims: [
+                        { cid: "claim-D", score: 0.8, ci_low: 0.7, ci_high: 0.9 },
+                        { cid: "claim-C", score: 0.2, ci_low: 0.1, ci_high: 0.3 }
+                    ]
+                }
+            ];
+            
+            displayRounds(testData);
+        }
+        
+        function displayRounds(timeline) {
+            const container = document.getElementById('container');
+            container.innerHTML = '';
+            
+            timeline.forEach((round, index) => {
+                const roundDiv = document.createElement('div');
+                roundDiv.className = 'round';
+                roundDiv.innerHTML = `
+                    <div class="round-header" onclick="toggleRound(${index})">
+                        Round ${round.round_index} - ${(round.convergence_score * 100).toFixed(1)}% confidence
+                    </div>
+                    <div class="round-content" id="content-${index}">
+                        <div class="claim-box">
+                            <div class="claim-title">Best Claim:</div>
+                            <div>${round.best_claim_text}</div>
+                        </div>
+                        <div class="claim-box">
+                            <div class="claim-title">Round Summary:</div>
+                            <div>${round.summary}</div>
+                        </div>
+                        <div class="claim-box">
+                            <div class="claim-title">Top Claims:</div>
+                            ${round.top_claims.map(claim => 
+                                `<div>${claim.cid}: ${(claim.score * 100).toFixed(1)}% (CI: ${(claim.ci_low * 100).toFixed(1)}%-${(claim.ci_high * 100).toFixed(1)}%)</div>`
+                            ).join('')}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(roundDiv);
+            });
+        }
+        
+        function toggleRound(index) {
+            const content = document.getElementById(`content-${index}`);
+            const header = content.previousElementSibling;
+            
+            if (content.classList.contains('active')) {
+                content.classList.remove('active');
+                header.classList.remove('active');
+            } else {
+                content.classList.add('active');
+                header.classList.add('active');
+            }
+        }
+        
+        function expandAll() {
+            document.querySelectorAll('.round-content').forEach(content => {
+                const header = content.previousElementSibling;
+                content.classList.add('active');
+                header.classList.add('active');
+            });
+        }
+        
+        function collapseAll() {
+            document.querySelectorAll('.round-content').forEach(content => {
+                const header = content.previousElementSibling;
+                content.classList.remove('active');
+                header.classList.remove('active');
+            });
+        }
+    </script>
+</body>
+</html>
+
+

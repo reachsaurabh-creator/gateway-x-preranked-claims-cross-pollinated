@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSS Test</title>
+    <style>
+        .round-details {
+            display: none;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e2e8f0;
+            background: #ffffff;
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+        }
+
+        .round-details.active {
+            display: block !important;
+        }
+        
+        .round-toggle {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            cursor: pointer;
+        }
+        
+        .round-toggle.active {
+            background: #2563eb;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>CSS Test</h1>
+    
+    <div class="round-toggle" onclick="toggle()">
+        Click to toggle details
+    </div>
+    
+    <div class="round-details" id="details">
+        <h3>This is the round details content</h3>
+        <p>This should be visible when the round is active.</p>
+        <p>If you can see this text, the CSS is working correctly.</p>
+    </div>
+    
+    <div id="debug"></div>
+
+    <script>
+        function toggle() {
+            const details = document.getElementById('details');
+            const toggle = details.previousElementSibling;
+            
+            console.log('Before toggle:');
+            console.log('  Classes:', details.className);
+            console.log('  Display:', window.getComputedStyle(details).display);
+            
+            details.classList.toggle('active');
+            toggle.classList.toggle('active');
+            
+            console.log('After toggle:');
+            console.log('  Classes:', details.className);
+            console.log('  Display:', window.getComputedStyle(details).display);
+            
+            document.getElementById('debug').innerHTML = `
+                <p><strong>Classes:</strong> ${details.className}</p>
+                <p><strong>Display:</strong> ${window.getComputedStyle(details).display}</p>
+                <p><strong>Has active class:</strong> ${details.classList.contains('active')}</p>
+            `;
+        }
+        
+        // Auto-activate on load
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                const details = document.getElementById('details');
+                const toggle = details.previousElementSibling;
+                details.classList.add('active');
+                toggle.classList.add('active');
+                console.log('Auto-activated');
+            }, 100);
+        });
+    </script>
+</body>
+</html>
+
+

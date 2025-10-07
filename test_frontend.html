@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Frontend Test</title>
+</head>
+<body>
+    <h1>Frontend Test</h1>
+    <div id="test-results"></div>
+    
+    <script>
+        // Test data similar to what the API returns
+        const testTimeline = [
+            {
+                "run_id": "test123",
+                "round_index": 1,
+                "convergence_score": 0.164,
+                "best_claim_cid": "[openai] Test claim 1",
+                "best_claim_text": "[openai] Test claim 1 - This is a test claim for exercise benefits",
+                "summary": "Truth response selects [openai] Test claim 1 as current best. Next contenders: [xai] Test claim 2 (TS 0.25), [gemini] Test claim 3 (TS 0.15).",
+                "top_claims": [
+                    {"cid": "[openai] Test claim 1", "score": 0.6, "ci_low": 0.4, "ci_high": 0.8},
+                    {"cid": "[xai] Test claim 2", "score": 0.25, "ci_low": 0.1, "ci_high": 0.4},
+                    {"cid": "[gemini] Test claim 3", "score": 0.15, "ci_low": 0.05, "ci_high": 0.25}
+                ]
+            },
+            {
+                "run_id": "test123",
+                "round_index": 2,
+                "convergence_score": 0.333,
+                "best_claim_cid": "[openai] Test claim 1",
+                "best_claim_text": "[openai] Test claim 1 - This is a test claim for exercise benefits",
+                "summary": "Truth response selects [openai] Test claim 1 as current best. Next contenders: [xai] Test claim 2 (TS 0.30), [gemini] Test claim 3 (TS 0.10).",
+                "top_claims": [
+                    {"cid": "[openai] Test claim 1", "score": 0.7, "ci_low": 0.5, "ci_high": 0.9},
+                    {"cid": "[xai] Test claim 2", "score": 0.30, "ci_low": 0.15, "ci_high": 0.45},
+                    {"cid": "[gemini] Test claim 3", "score": 0.10, "ci_low": 0.02, "ci_high": 0.18}
+                ]
+            },
+            {
+                "run_id": "test123",
+                "round_index": 3,
+                "convergence_score": 0.5,
+                "best_claim_cid": "[openai] Test claim 1",
+                "best_claim_text": "[openai] Test claim 1 - This is a test claim for exercise benefits",
+                "summary": "Truth response selects [openai] Test claim 1 as current best. Next contenders: [xai] Test claim 2 (TS 0.35), [gemini] Test claim 3 (TS 0.15).",
+                "top_claims": [
+                    {"cid": "[openai] Test claim 1", "score": 0.8, "ci_low": 0.6, "ci_high": 1.0},
+                    {"cid": "[xai] Test claim 2", "score": 0.35, "ci_low": 0.20, "ci_high": 0.50},
+                    {"cid": "[gemini] Test claim 3", "score": 0.15, "ci_low": 0.05, "ci_high": 0.25}
+                ]
+            }
+        ];
+
+        // Test convergence chart data extraction
+        function testConvergenceChart() {
+            const scores = testTimeline.map(round => round.convergence_score);
+            console.log('Convergence scores:', scores);
+            return scores.length > 0;
+        }
+
+        // Test round details display
+        function testRoundDetails() {
+            let allValid = true;
+            testTimeline.forEach((round, index) => {
+                const hasBestClaim = round.best_claim_text && round.best_claim_text.length > 0;
+                const hasSummary = round.summary && round.summary.length > 0;
+                const hasTopClaims = round.top_claims && round.top_claims.length > 0;
+                
+                console.log(`Round ${index + 1}:`, {
+                    hasBestClaim,
+                    hasSummary,
+                    hasTopClaims,
+                    bestClaim: round.best_claim_text?.substring(0, 50) + '...',
+                    summary: round.summary?.substring(0, 50) + '...',
+                    topClaimsCount: round.top_claims?.length || 0
+                });
+                
+                if (!hasBestClaim || !hasSummary || !hasTopClaims) {
+                    allValid = false;
+                }
+            });
+            return allValid;
+        }
+
+        // Run tests
+        const results = document.getElementById('test-results');
+        results.innerHTML = `
+            <h2>Test Results:</h2>
+            <p>Convergence Chart Data: ${testConvergenceChart() ? '✅ PASS' : '❌ FAIL'}</p>
+            <p>Round Details Data: ${testRoundDetails() ? '✅ PASS' : '❌ FAIL'}</p>
+            <p>Timeline Length: ${testTimeline.length}</p>
+        `;
+    </script>
+</body>
+</html>
+

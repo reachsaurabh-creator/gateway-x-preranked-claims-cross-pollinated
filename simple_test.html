@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Round Details Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .round { margin: 20px 0; border: 1px solid #ccc; border-radius: 8px; }
+        .round-header { 
+            background: #f0f0f0; 
+            padding: 15px; 
+            cursor: pointer; 
+            font-weight: bold;
+            border-radius: 8px 8px 0 0;
+        }
+        .round-header:hover { background: #e0e0e0; }
+        .round-header.active { background: #007bff; color: white; }
+        .round-content { 
+            padding: 15px; 
+            background: white;
+            border-radius: 0 0 8px 8px;
+        }
+        .claim-box { 
+            background: #f8f9fa; 
+            border: 1px solid #dee2e6; 
+            padding: 10px; 
+            margin: 10px 0; 
+            border-radius: 4px; 
+        }
+        .claim-title { font-weight: bold; color: #007bff; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Simple Round Details Test</h1>
+    <button onclick="testWithRealData()">Test with Real Data</button>
+    <div id="container"></div>
+
+    <script>
+        let currentOpen = null;
+        
+        async function testWithRealData() {
+            try {
+                const response = await fetch('/timeline/5b83337b98f0');
+                const data = await response.json();
+                
+                console.log('Real data:', data);
+                displayRounds(data);
+                
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+        
+        function displayRounds(timeline) {
+            const container = document.getElementById('container');
+            container.innerHTML = '';
+            
+            timeline.forEach((round, index) => {
+                console.log(`Round ${index + 1}:`, round);
+                
+                const roundDiv = document.createElement('div');
+                roundDiv.className = 'round';
+                roundDiv.innerHTML = `
+                    <div class="round-header" onclick="toggleRound(${index})">
+                        Round ${round.round_index} - ${(round.convergence_score * 100).toFixed(1)}% confidence
+                    </div>
+                    <div class="round-content" id="content-${index}" style="display: none;">
+                        <div class="claim-box">
+                            <div class="claim-title">Best Claim:</div>
+                            <div>${round.best_claim_text || 'No claim'}</div>
+                        </div>
+                        <div class="claim-box">
+                            <div class="claim-title">Round Summary:</div>
+                            <div>${round.summary || 'No summary'}</div>
+                        </div>
+                        <div class="claim-box">
+                            <div class="claim-title">Top Claims:</div>
+                            ${round.top_claims ? round.top_claims.map(claim => 
+                                `<div>${claim.cid.substring(0, 50)}...: ${(claim.score * 100).toFixed(1)}%</div>`
+                            ).join('') : 'No claims'}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(roundDiv);
+            });
+            
+            // Auto-open first round
+            setTimeout(() => {
+                toggleRound(0);
+            }, 100);
+        }
+        
+        function toggleRound(index) {
+            const content = document.getElementById(`content-${index}`);
+            const header = content.previousElementSibling;
+            
+            // Close current open round if different
+            if (currentOpen !== null && currentOpen !== index) {
+                const currentContent = document.getElementById(`content-${currentOpen}`);
+                const currentHeader = currentContent.previousElementSibling;
+                currentContent.style.display = 'none';
+                currentHeader.className = 'round-header';
+            }
+            
+            // Toggle current round
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                header.className = 'round-header active';
+                currentOpen = index;
+            } else {
+                content.style.display = 'none';
+                header.className = 'round-header';
+                currentOpen = null;
+            }
+        }
+    </script>
+</body>
+</html>
+
+

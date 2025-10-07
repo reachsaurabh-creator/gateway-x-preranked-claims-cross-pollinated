@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend Direct Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; }
+        .round { margin: 10px 0; padding: 10px; border: 1px solid #eee; background: #f9f9f9; }
+        .chart { width: 100%; height: 200px; border: 1px solid #ddd; background: #f0f0f0; }
+        .error { color: red; }
+        .success { color: green; }
+        .claim { margin: 5px 0; padding: 5px; background: #e8f4f8; border-left: 3px solid #2563eb; }
+    </style>
+</head>
+<body>
+    <h1>Frontend Direct Test</h1>
+    
+    <div class="test-section">
+        <h2>Test with Real Data</h2>
+        <button onclick="testWithRealData()">Test with Real Data</button>
+        <div id="test-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Convergence Chart</h2>
+        <canvas class="chart" id="convergenceChart"></canvas>
+        <div id="chart-info"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Round Details</h2>
+        <div id="roundsContainer"></div>
+    </div>
+
+    <script>
+        async function testWithRealData() {
+            try {
+                console.log('Testing with real data...');
+                
+                // Get real timeline data
+                const timelineResponse = await fetch('/timeline/25a4a968b2af');
+                if (!timelineResponse.ok) {
+                    throw new Error('Failed to fetch timeline data');
+                }
+                
+                const timelineData = await timelineResponse.json();
+                console.log('Timeline data received:', timelineData);
+                
+                // Display the data
+                displayTimelineData(timelineData);
+                
+                document.getElementById('test-result').innerHTML = `
+                    <div class="success">
+                        ✅ Successfully loaded ${timelineData.length} rounds of data
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('test-result').innerHTML = `
+                    <div class="error">❌ Error: ${error.message}</div>
+                `;
+            }
+        }
+        
+        function displayTimelineData(timeline) {
+            console.log('Displaying timeline data...');
+            
+            // Draw convergence chart
+            drawConvergenceChart(timeline);
+            
+            // Display round details
+            displayRoundDetails(timeline);
+        }
+        
+        function drawConvergenceChart(timeline) {
+            console.log('Drawing convergence chart...');
+            const canvas = document.getElementById('convergenceChart');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size
+            canvas.width = canvas.offsetWidth;
+            canvas.height = 200;
+            
+            const width = canvas.width;
+            const height = canvas.height;
+            const padding = 40;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, width, height);
+            
+            if (timeline.length === 0) {
+                ctx.fillStyle = '#666';
+                ctx.font = '16px Arial';
+                ctx.fillText('No data available', width/2 - 60, height/2);
+                return;
+            }
+            
+            // Extract convergence scores
+            const scores = timeline.map(round => round.convergence_score);
+            console.log('Convergence scores:', scores);
+            
+            // Draw axes
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            
+            // Y-axis
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, height - padding);
+            ctx.stroke();
+            
+            // X-axis
+            ctx.beginPath();
+            ctx.moveTo(padding, height - padding);
+            ctx.lineTo(width - padding, height - padding);
+            ctx.stroke();
+            
+            // Draw grid lines
+            ctx.strokeStyle = '#ddd';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 10; i++) {
+                const y = height - padding - (i / 10) * (height - 2 * padding);
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(width - padding, y);
+                ctx.stroke();
+            }
+            
+            // Draw convergence line
+            if (timeline.length > 1) {
+                ctx.strokeStyle = '#2563eb';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                
+                for (let i = 0; i < timeline.length; i++) {
+                    const x = padding + (i / Math.max(timeline.length - 1, 1)) * (width - 2 * padding);
+                    const y = height - padding - (scores[i]) * (height - 2 * padding);
+                    
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.stroke();
+            }
+            
+            // Draw data points
+            ctx.fillStyle = '#2563eb';
+            for (let i = 0; i < timeline.length; i++) {
+                const x = padding + (i / Math.max(timeline.length - 1, 1)) * (width - 2 * padding);
+                const y = height - padding - (scores[i]) * (height - 2 * padding);
+                
+                ctx.beginPath();
+                ctx.arc(x, y, 5, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            
+            // Add labels
+            ctx.fillStyle = '#333';
+            ctx.font = '12px Arial';
+            for (let i = 0; i < timeline.length; i++) {
+                const x = padding + (i / Math.max(timeline.length - 1, 1)) * (width - 2 * padding);
+                ctx.fillText(`R${i + 1}`, x - 10, height - 10);
+            }
+            
+            document.getElementById('chart-info').innerHTML = `
+                <div class="success">
+                    Chart drawn with ${timeline.length} rounds<br>
+                    Scores: ${scores.map(s => s.toFixed(3)).join(', ')}
+                </div>
+            `;
+        }
+        
+        function displayRoundDetails(timeline) {
+            console.log('Displaying round details...');
+            const container = document.getElementById('roundsContainer');
+            container.innerHTML = '';
+            
+            timeline.forEach((round, index) => {
+                console.log(`Processing round ${index + 1}:`, round);
+                
+                const roundDiv = document.createElement('div');
+                roundDiv.className = 'round';
+                
+                const confidence = (round.convergence_score * 100).toFixed(1);
+                
+                roundDiv.innerHTML = `
+                    <h3>Round ${round.round_index}</h3>
+                    <p><strong>Confidence Score:</strong> ${confidence}%</p>
+                    
+                    <h4>Best Claim:</h4>
+                    <div class="claim">${round.best_claim_text || 'No claim selected'}</div>
+                    
+                    <h4>Round Summary:</h4>
+                    <p>${round.summary || 'No summary available'}</p>
+                    
+                    <h4>Top Claims (${round.top_claims ? round.top_claims.length : 0}):</h4>
+                    ${round.top_claims ? round.top_claims.map((claim, i) => `
+                        <div class="claim">
+                            <strong>${i + 1}. ${claim.cid.substring(0, 60)}...</strong><br>
+                            <small>Score: ${(claim.score * 100).toFixed(1)}% | CI: ${(claim.ci_low * 100).toFixed(1)}% - ${(claim.ci_high * 100).toFixed(1)}%</small>
+                        </div>
+                    `).join('') : '<p>No top claims available</p>'}
+                `;
+                
+                container.appendChild(roundDiv);
+            });
+        }
+    </script>
+</body>
+</html>
+

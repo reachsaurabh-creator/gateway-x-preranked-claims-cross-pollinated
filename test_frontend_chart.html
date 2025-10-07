@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend Chart Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .chart-container { margin: 2rem 0; padding: 1rem; background: #f8fafc; border-radius: 8px; }
+        .chart-title { font-weight: 600; margin-bottom: 1rem; text-align: center; }
+        .chart { width: 100%; height: 200px; border: 1px solid #ddd; }
+        .debug { margin: 10px 0; padding: 10px; background: #e8f4f8; border: 1px solid #2563eb; }
+    </style>
+</head>
+<body>
+    <h1>Frontend Chart Test</h1>
+    
+    <div class="debug">
+        <h3>Test with Real Data:</h3>
+        <button onclick="testWithRealData()">Test with Real Data</button>
+        <div id="test-result"></div>
+    </div>
+    
+    <div class="chart-container">
+        <div class="chart-title">Consensus Convergence Over Rounds</div>
+        <canvas class="chart" id="convergenceChart"></canvas>
+        <div id="chart-debug"></div>
+    </div>
+
+    <script>
+        async function testWithRealData() {
+            try {
+                console.log('Testing with real data...');
+                
+                // Get real timeline data
+                const timelineResponse = await fetch('/timeline/7739fffd009f');
+                if (!timelineResponse.ok) {
+                    throw new Error('Failed to fetch timeline data');
+                }
+                
+                const timelineData = await timelineResponse.json();
+                console.log('Timeline data received:', timelineData);
+                
+                // Draw the chart
+                drawConvergenceChart(timelineData);
+                
+                document.getElementById('test-result').innerHTML = `
+                    <div style="color: green;">
+                        ✅ Successfully loaded ${timelineData.length} rounds of data
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('test-result').innerHTML = `
+                    <div style="color: red;">❌ Error: ${error.message}</div>
+                `;
+            }
+        }
+        
+        function drawConvergenceChart(timeline) {
+            console.log('Drawing convergence chart...');
+            console.log('Timeline:', timeline);
+            
+            const canvas = document.getElementById('convergenceChart');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size
+            canvas.width = canvas.offsetWidth;
+            canvas.height = 200;
+            
+            console.log('Canvas size:', canvas.width, 'x', canvas.height);
+            
+            const width = canvas.width;
+            const height = canvas.height;
+            const padding = 40;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, width, height);
+            
+            if (timeline.length === 0) {
+                console.log('No timeline data for chart');
+                document.getElementById('chart-debug').innerHTML = '<div style="color: red;">No timeline data</div>';
+                return;
+            }
+            
+            // Extract convergence scores
+            const scores = timeline.map(round => round.convergence_score);
+            console.log('Convergence scores:', scores);
+            
+            const maxScore = Math.max(...scores, 1.0);
+            const minScore = Math.min(...scores, 0.0);
+            console.log('Max score:', maxScore, 'Min score:', minScore);
+            
+            // Draw background
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, height);
+            
+            // Draw axes
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1;
+            
+            // Y-axis
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, height - padding);
+            ctx.stroke();
+            
+            // X-axis
+            ctx.beginPath();
+            ctx.moveTo(padding, height - padding);
+            ctx.lineTo(width - padding, height - padding);
+            ctx.stroke();
+            
+            // Draw grid lines and labels
+            ctx.fillStyle = '#64748b';
+            ctx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
+            
+            // Y-axis labels (confidence %)
+            for (let i = 0; i <= 10; i++) {
+                const y = height - padding - (i / 10) * (height - 2 * padding);
+                const value = (i * 10) + '%';
+                
+                ctx.fillText(value, 5, y + 4);
+                
+                if (i > 0) {
+                    ctx.strokeStyle = '#f1f5f9';
+                    ctx.beginPath();
+                    ctx.moveTo(padding, y);
+                    ctx.lineTo(width - padding, y);
+                    ctx.stroke();
+                }
+            }
+            
+            // X-axis labels (rounds)
+            for (let i = 0; i < timeline.length; i++) {
+                const x = padding + (i / Math.max(timeline.length - 1, 1)) * (width - 2 * padding);
+                ctx.fillText(`R${i + 1}`, x - 10, height - 10);
+            }
+            
+            // Draw convergence line
+            if (timeline.length > 1) {
+                ctx.strokeStyle = '#2563eb';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                
+                for (let i = 0; i < timeline.length; i++) {
+                    const x = padding + (i / Math.max(timeline.length - 1, 1)) * (width - 2 * padding);
+                    const y = height - padding - (scores[i]) * (height - 2 * padding);
+                    
+                    console.log(`Point ${i}: x=${x}, y=${y}, score=${scores[i]}`);
+                    
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                
+                ctx.stroke();
+                
+                // Draw points
+                ctx.fillStyle = '#2563eb';
+                for (let i = 0; i < timeline.length; i++) {
+                    const x = padding + (i / Math.max(timeline.length - 1, 1)) * (width - 2 * padding);
+                    const y = height - padding - (scores[i]) * (height - 2 * padding);
+                    
+                    ctx.beginPath();
+                    ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+            } else {
+                // Single point
+                const x = padding + (width - 2 * padding) / 2;
+                const y = height - padding - (scores[0]) * (height - 2 * padding);
+                
+                ctx.fillStyle = '#2563eb';
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            
+            document.getElementById('chart-debug').innerHTML = `
+                <div style="color: green;">
+                    Chart drawn successfully!<br>
+                    Timeline length: ${timeline.length}<br>
+                    Scores: ${scores.map(s => s.toFixed(3)).join(', ')}<br>
+                    Canvas size: ${canvas.width} x ${canvas.height}
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
+
+

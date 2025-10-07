@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulletproof Round Details Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .round { margin: 20px 0; border: 1px solid #ccc; border-radius: 8px; }
+        .round-header { 
+            background: #f0f0f0; 
+            padding: 15px; 
+            cursor: pointer; 
+            font-weight: bold;
+            border-radius: 8px 8px 0 0;
+        }
+        .round-header:hover { background: #e0e0e0; }
+        .round-header.active { background: #007bff; color: white; }
+        .round-content { 
+            padding: 15px; 
+            background: white;
+            border-radius: 0 0 8px 8px;
+        }
+        .hidden { display: none !important; }
+        .visible { display: block !important; }
+        .claim-box { 
+            background: #f8f9fa; 
+            border: 1px solid #dee2e6; 
+            padding: 10px; 
+            margin: 10px 0; 
+            border-radius: 4px; 
+        }
+        .claim-title { font-weight: bold; color: #007bff; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Bulletproof Round Details Test</h1>
+    <p>This test uses the simplest possible approach - no CSS classes, just direct style manipulation.</p>
+    
+    <div id="container"></div>
+    
+    <div id="debug" style="margin-top: 20px; padding: 10px; background: #f8f9fa; border-radius: 4px;">
+        <strong>Debug Info:</strong> <span id="debugText">Loading...</span>
+    </div>
+
+    <script>
+        let currentOpen = null;
+        
+        async function loadData() {
+            try {
+                const response = await fetch('/timeline/a8e2180eb1fc');
+                const data = await response.json();
+                
+                document.getElementById('debugText').textContent = `Loaded ${data.length} rounds`;
+                
+                const container = document.getElementById('container');
+                container.innerHTML = '';
+                
+                data.forEach((round, index) => {
+                    const roundDiv = document.createElement('div');
+                    roundDiv.className = 'round';
+                    roundDiv.innerHTML = `
+                        <div class="round-header" onclick="toggleRound(${index})">
+                            Round ${round.round_index} - ${(round.convergence_score * 100).toFixed(1)}% confidence
+                        </div>
+                        <div class="round-content hidden" id="content-${index}">
+                            <div class="claim-box">
+                                <div class="claim-title">Best Claim:</div>
+                                <div>${round.best_claim_text || 'No claim'}</div>
+                            </div>
+                            <div class="claim-box">
+                                <div class="claim-title">Round Summary:</div>
+                                <div>${round.summary || 'No summary'}</div>
+                            </div>
+                            <div class="claim-box">
+                                <div class="claim-title">Top Claims:</div>
+                                ${round.top_claims ? round.top_claims.map(claim => 
+                                    `<div>${claim.cid}: ${(claim.score * 100).toFixed(1)}% (CI: ${(claim.ci_low * 100).toFixed(1)}%-${(claim.ci_high * 100).toFixed(1)}%)</div>`
+                                ).join('') : 'No claims'}
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(roundDiv);
+                });
+                
+                // Auto-open first round
+                setTimeout(() => {
+                    toggleRound(0);
+                }, 100);
+                
+            } catch (error) {
+                document.getElementById('debugText').textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        function toggleRound(index) {
+            const content = document.getElementById(`content-${index}`);
+            const header = content.previousElementSibling;
+            
+            console.log(`Toggling round ${index}`);
+            console.log(`Current display: ${content.style.display}`);
+            
+            // Close current open round if different
+            if (currentOpen !== null && currentOpen !== index) {
+                const currentContent = document.getElementById(`content-${currentOpen}`);
+                const currentHeader = currentContent.previousElementSibling;
+                currentContent.style.display = 'none';
+                currentContent.className = 'round-content hidden';
+                currentHeader.className = 'round-header';
+            }
+            
+            // Toggle current round
+            if (content.style.display === 'none' || content.classList.contains('hidden')) {
+                content.style.display = 'block';
+                content.className = 'round-content visible';
+                header.className = 'round-header active';
+                currentOpen = index;
+                console.log(`Opened round ${index}`);
+            } else {
+                content.style.display = 'none';
+                content.className = 'round-content hidden';
+                header.className = 'round-header';
+                currentOpen = null;
+                console.log(`Closed round ${index}`);
+            }
+            
+            document.getElementById('debugText').textContent = `Round ${index} ${content.style.display === 'block' ? 'opened' : 'closed'}. Current open: ${currentOpen}`;
+        }
+        
+        // Load data when page loads
+        document.addEventListener('DOMContentLoaded', loadData);
+    </script>
+</body>
+</html>
+
+

@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gateway X - Working Frontend</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #64748b;
+            --success: #059669;
+            --warning: #d97706;
+            --error: #dc2626;
+            --bg: #ffffff;
+            --fg: #1f2937;
+            --muted: #6b7280;
+            --border: #e5e7eb;
+            --input-bg: #f9fafb;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: var(--fg);
+            background: var(--bg);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            color: var(--muted);
+        }
+
+        .card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--fg);
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            background: var(--input-bg);
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .slider {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--border);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+        }
+
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            border: none;
+        }
+
+        .confidence-display {
+            font-weight: 600;
+            color: var(--primary);
+            min-width: 80px;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            background: #1d4ed8;
+        }
+
+        .btn:disabled {
+            background: var(--muted);
+            cursor: not-allowed;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results {
+            display: none;
+        }
+
+        .consensus-result {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 1px solid #0ea5e9;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .consensus-text {
+            font-size: 1.2rem;
+            line-height: 1.7;
+            margin-bottom: 1rem;
+            color: var(--fg);
+        }
+
+        .consensus-meta {
+            font-size: 0.9rem;
+            color: var(--muted);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .chart-container {
+            margin: 2rem 0;
+            padding: 1rem;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+
+        .chart-title {
+            font-weight: 600;
+            margin-bottom: 1rem;
+            text-align: center;
+            color: var(--fg);
+        }
+
+        .chart {
+            width: 100%;
+            height: 200px;
+            border: 2px solid #e2e8f0;
+            background: #ffffff;
+        }
+
+        .rounds-container {
+            margin-top: 2rem;
+        }
+
+        .round-toggle {
+            width: 100%;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            position: relative;
+        }
+
+        .round-toggle:hover {
+            background: #e2e8f0;
+        }
+
+        .round-toggle.active {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+
+        .round-toggle::after {
+            content: '▼';
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            transition: transform 0.2s;
+        }
+
+        .round-toggle.active::after {
+            transform: translateY(-50%) rotate(180deg);
+        }
+
+        .round-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+        }
+
+        .round-details {
+            display: none;
+            margin-top: 1rem;
+            padding: 1rem;
+            border-top: 1px solid #e2e8f0;
+            background: #ffffff;
+            border-radius: 6px;
+            margin: 1rem 0;
+        }
+
+        .model-response {
+            background: #f8f9fa;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .model-name {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #2563eb;
+        }
+
+        .error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Gateway X</h1>
+            <p>AI Consensus Engine - Seek Truth Through Dueling</p>
+        </div>
+
+        <!-- Input Form -->
+        <div class="card" id="inputForm">
+            <form onsubmit="submitQuery(event)">
+                <div class="form-group">
+                    <label for="question">Enter the question you seek a response to:</label>
+                    <textarea 
+                        id="question" 
+                        name="question" 
+                        rows="3" 
+                        placeholder="What is the meaning of life? How does photosynthesis work? What are the best practices for software development?"
+                        required
+                    ></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="confidenceSlider">Confidence Threshold: <span id="confidenceValue">95%</span></label>
+                    <div class="slider-container">
+                        <input 
+                            type="range" 
+                            id="confidenceSlider" 
+                            name="confidence" 
+                            min="50" 
+                            max="99" 
+                            value="95" 
+                            class="slider"
+                            oninput="updateConfidenceDisplay()"
+                        >
+                        <span class="confidence-display" id="confidenceDisplay">95%</span>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn" id="submitBtn">
+                    <span>🚀</span> Seek Consensus
+                </button>
+            </form>
+        </div>
+
+        <!-- Loading State -->
+        <div class="loading hidden" id="loadingState">
+            <div class="spinner"></div>
+            <p>Processing your query through multiple AI engines...</p>
+        </div>
+
+        <!-- Error Display -->
+        <div class="error hidden" id="errorDisplay"></div>
+
+        <!-- Results -->
+        <div class="results" id="resultsSection">
+            <!-- Consensus Result -->
+            <div class="card">
+                <h2>Consensus Response</h2>
+                <div class="consensus-result" id="consensusResult">
+                    <div class="consensus-text" id="consensusText"></div>
+                    <div class="consensus-meta" id="consensusMeta"></div>
+                </div>
+            </div>
+
+            <!-- Convergence Chart -->
+            <div class="card">
+                <div class="chart-container">
+                    <div class="chart-title">Consensus Convergence Over Rounds</div>
+                    <canvas class="chart" id="convergenceChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Round Details -->
+            <div class="card">
+                <h2>Round Details</h2>
+                <div class="rounds-container" id="roundsContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentRunId = null;
+        let currentOpenRound = null;
+
+        function updateConfidenceDisplay() {
+            const slider = document.getElementById('confidenceSlider');
+            const display = document.getElementById('confidenceDisplay');
+            const value = document.getElementById('confidenceValue');
+            const confidence = slider.value;
+            
+            display.textContent = confidence + '%';
+            value.textContent = confidence + '%';
+        }
+
+        async function submitQuery(event) {
+            event.preventDefault();
+            
+            const question = document.getElementById('question').value;
+            const confidence = document.getElementById('confidenceSlider').value / 100;
+            
+            // Show loading state
+            document.getElementById('inputForm').style.display = 'none';
+            document.getElementById('loadingState').classList.remove('hidden');
+            document.getElementById('resultsSection').style.display = 'none';
+            hideError();
+
+            try {
+                // Submit query to backend
+                const response = await fetch('/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: question,
+                        budget: 2,
+                        confidence_threshold: confidence
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                currentRunId = result.run_id;
+
+                console.log('Query result:', result);
+
+                // Get timeline data
+                console.log('Fetching timeline for run:', currentRunId);
+                const timelineResponse = await fetch(`/timeline/${currentRunId}`);
+                if (!timelineResponse.ok) {
+                    throw new Error('Failed to fetch timeline data');
+                }
+
+                const timelineData = await timelineResponse.json();
+                console.log('Timeline data fetched:', timelineData);
+
+                // Display results
+                displayResults(result, timelineData);
+
+            } catch (error) {
+                console.error('Error:', error);
+                showError('Failed to process query: ' + error.message);
+                document.getElementById('inputForm').style.display = 'block';
+            } finally {
+                document.getElementById('loadingState').classList.add('hidden');
+            }
+        }
+
+        function displayResults(result, timeline) {
+            console.log('=== DISPLAYING RESULTS ===');
+            console.log('Result:', result);
+            console.log('Timeline:', timeline);
+
+            // Show consensus result
+            document.getElementById('consensusText').textContent = result.best_claim;
+            document.getElementById('consensusMeta').innerHTML = `
+                <strong>Confidence:</strong> ${(result.confidence * 100).toFixed(1)}% | 
+                <strong>Rounds:</strong> ${result.rounds} | 
+                <strong>Total Duels:</strong> ${result.total_duels} | 
+                <strong>Stop Reason:</strong> ${formatStopReason(result.stop_reason)}
+            `;
+
+            // Show results section first
+            document.getElementById('resultsSection').style.display = 'block';
+
+            // Draw convergence chart
+            drawConvergenceChart(timeline);
+
+            // Display round details
+            displayRoundDetails(timeline);
+        }
+
+        function drawConvergenceChart(timeline) {
+            console.log('Drawing convergence chart...');
+            
+            const canvas = document.getElementById('convergenceChart');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size
+            const containerWidth = canvas.parentElement.offsetWidth;
+            canvas.width = containerWidth - 32;
+            canvas.height = 200;
+            
+            const width = canvas.width;
+            const height = canvas.height;
+            const padding = 40;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, width, height);
+            
+            if (timeline.length === 0) {
+                console.log('No timeline data for chart');
+                return;
+            }
+            
+            // Extract convergence scores
+            const scores = timeline.map(round => round.convergence_score);
+            console.log('Convergence scores:', scores);
+            
+            // Draw background
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, height);
+            
+            // Draw axes
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1;
+            
+            // Y-axis
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, height - padding);
+            ctx.stroke();
+            
+            // X-axis
+            ctx.beginPath();
+            ctx.moveTo(padding, height - padding);
+            ctx.lineTo(width - padding, height - padding);
+            ctx.stroke();
+            
+            // Draw grid lines and labels
+            ctx.fillStyle = '#64748b';
+            ctx.font = '12px Arial';
+            
+            // Y-axis labels
+            for (let i = 0; i <= 10; i++) {
+                const y = height - padding - (i / 10) * (height - 2 * padding);
+                const value = (i * 10) + '%';
+                ctx.fillText(value, 5, y + 4);
+                
+                if (i > 0) {
+                    ctx.strokeStyle = '#f1f5f9';
+                    ctx.beginPath();
+                    ctx.moveTo(padding, y);
+                    ctx.lineTo(width - padding, y);
+                    ctx.stroke();
+                }
+            }
+            
+            // X-axis labels
+            for (let i = 0; i < timeline.length; i++) {
+                const x = padding + (i / Math.max(timeline.length - 1, 1)) * (width - 2 * padding);
+                ctx.fillText(`R${i + 1}`, x - 10, height - 10);
+            }
+            
+            // Draw convergence line
+            if (timeline.length > 1) {
+                ctx.strokeStyle = '#2563eb';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                
+                for (let i = 0; i < timeline.length; i++) {
+                    const x = padding + (i / Math.max(timeline.length - 1, 1)) * (width - 2 * padding);
+                    const y = height - padding - (scores[i]) * (height - 2 * padding);
+                    
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                
+                ctx.stroke();
+                
+                // Draw points
+                ctx.fillStyle = '#2563eb';
+                for (let i = 0; i < timeline.length; i++) {
+                    const x = padding + (i / Math.max(timeline.length - 1, 1)) * (width - 2 * padding);
+                    const y = height - padding - (scores[i]) * (height - 2 * padding);
+                    
+                    ctx.beginPath();
+                    ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+            } else {
+                // Single point
+                const x = padding + (width - 2 * padding) / 2;
+                const y = height - padding - (scores[0]) * (height - 2 * padding);
+                
+                ctx.fillStyle = '#2563eb';
+                ctx.beginPath();
+                ctx.arc(x, y, 6, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            
+            console.log('Chart drawing completed');
+        }
+
+        function displayRoundDetails(timeline) {
+            console.log('=== DISPLAY ROUND DETAILS DEBUG ===');
+            console.log('Timeline data received:', timeline);
+            console.log('Timeline length:', timeline.length);
+            
+            const container = document.getElementById('roundsContainer');
+            container.innerHTML = '';
+            
+            timeline.forEach((round, index) => {
+                console.log(`Processing round ${index + 1}:`, round);
+                
+                const roundDiv = document.createElement('div');
+                roundDiv.className = 'round-toggle';
+                roundDiv.onclick = () => toggleRound(index);
+                
+                const confidence = (round.convergence_score * 100).toFixed(1);
+                
+                roundDiv.innerHTML = `
+                    <div class="round-header">
+                        <span>Round ${round.round_index}</span>
+                        <span class="confidence-badge">${confidence}% confidence</span>
+                    </div>
+                    <div class="round-details" id="round-${index}">
+                        <div class="model-response">
+                            <div class="model-name">Best Claim</div>
+                            <div>${round.best_claim_text || 'No claim selected'}</div>
+                        </div>
+                        <div class="model-response">
+                            <div class="model-name">Round Summary</div>
+                            <div>${round.summary || 'No summary available'}</div>
+                        </div>
+                        <div class="model-response">
+                            <div class="model-name">Top Claims</div>
+                            ${round.top_claims ? round.top_claims.map(claim => `
+                                <div style="margin-bottom: 0.5rem;">
+                                    <strong>${claim.cid}:</strong> Score ${(claim.score * 100).toFixed(1)}%
+                                    (CI: ${(claim.ci_low * 100).toFixed(1)}% - ${(claim.ci_high * 100).toFixed(1)}%)
+                                </div>
+                            `).join('') : 'No claims available'}
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(roundDiv);
+                
+                // Test if content is actually there
+                const testContent = roundDiv.querySelector('.round-details');
+                console.log(`Round ${index} content created:`, testContent ? 'YES' : 'NO');
+                if (testContent) {
+                    console.log(`Round ${index} best claim length:`, testContent.querySelector('.model-response')?.textContent?.length || 0);
+                }
+                
+                // Auto-expand the first round to show content immediately
+                if (index === 0) {
+                    setTimeout(() => {
+                        const roundDetails = document.getElementById(`round-${index}`);
+                        const roundToggle = roundDetails.parentElement;
+                        if (roundDetails && roundToggle) {
+                            roundDetails.style.display = 'block';
+                            roundToggle.classList.add('active');
+                            currentOpenRound = 0;
+                            console.log('First round auto-opened');
+                            console.log('First round content visible:', roundDetails.style.display);
+                        }
+                    }, 100);
+                }
+            });
+        }
+
+        function toggleRound(index) {
+            const roundDetails = document.getElementById(`round-${index}`);
+            const roundToggle = roundDetails.parentElement;
+            
+            console.log(`Toggling round ${index}, current open: ${currentOpenRound}`);
+            
+            // If this round is already open, close it
+            if (currentOpenRound === index) {
+                roundDetails.style.display = 'none';
+                roundToggle.classList.remove('active');
+                currentOpenRound = null;
+                console.log(`Closed round ${index}`);
+                return;
+            }
+            
+            // Close any currently open round
+            if (currentOpenRound !== null) {
+                const currentDetails = document.getElementById(`round-${currentOpenRound}`);
+                const currentToggle = currentDetails.parentElement;
+                currentDetails.style.display = 'none';
+                currentToggle.classList.remove('active');
+            }
+            
+            // Open the selected round
+            roundDetails.style.display = 'block';
+            roundToggle.classList.add('active');
+            currentOpenRound = index;
+            
+            console.log(`Opened round ${index}`);
+        }
+
+        function formatStopReason(reason) {
+            const reasons = {
+                'confidence_threshold': 'Confidence threshold reached',
+                'ci_separation': 'Statistical significance achieved',
+                'max_rounds': 'Maximum rounds reached',
+                'budget_exhausted': 'Budget exhausted'
+            };
+            return reasons[reason] || reason;
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorDisplay');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+        }
+
+        function hideError() {
+            document.getElementById('errorDisplay').classList.add('hidden');
+        }
+
+        function resetForm() {
+            document.getElementById('inputForm').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('question').value = '';
+            hideError();
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateConfidenceDisplay();
+        });
+    </script>
+</body>
+</html>
+
+

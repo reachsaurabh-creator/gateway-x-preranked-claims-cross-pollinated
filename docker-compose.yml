@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  gateway-x:
+    build: .
+    ports:
+      - "3001:3001"
+    environment:
+      - GATEWAYX_USE_REAL_LLM=${GATEWAYX_USE_REAL_LLM:-false}
+      - GATEWAYX_MULTI_ENGINE_MODE=${GATEWAYX_MULTI_ENGINE_MODE:-false}
+    env_file:
+      - .env
+    volumes:
+      - ./data/logs:/app/data/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./src/frontend:/usr/share/nginx/html:ro
+    depends_on:
+      - gateway-x
